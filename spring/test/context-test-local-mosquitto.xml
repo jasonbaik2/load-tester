@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ctx="http://www.springframework.org/schema/context" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+	<import resource="file:spring/context-controller.xml" />
+
+	<util:list id="scenarios" value-type="me.jasonbaik.loadtester.valueobject.Scenario">
+		<bean class="me.jasonbaik.loadtester.valueobject.Scenario">
+			<property name="sends" ref="sends" />
+			<property name="receives" ref="receives" />
+			<property name="reportDir" value="report" />
+		</bean>
+	</util:list>
+
+	<util:list id="sends" value-type="me.jasonbaik.loadtester.valueobject.Send">
+		<bean class="me.jasonbaik.loadtester.valueobject.Send">
+			<property name="samplerConfig">
+				<bean class="me.jasonbaik.loadtester.sampler.impl.CyclicSamplerConfig">
+					<property name="messageIntervalNano" value="1000" />
+				</bean>
+			</property>
+			<property name="senderConfig">
+				<bean class="me.jasonbaik.loadtester.sender.impl.RoundRobinMQTTPublisherConfig">
+					<property name="mqttBroker" value="tcp://localhost:1883?transport.enabledCipherSuites=TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256" />
+					<property name="mqttBrokerUsername" value="admin" />
+					<property name="mqttBrokerPassword" value="admin" />
+					<property name="numMessages" value="500" />
+					<property name="numConnections" value="10" />
+					<property name="messageByteLength" value="1024" />
+					<property name="qos" value="EXACTLY_ONCE" />
+					<property name="keepAliveIntervalMilli" value="0" />
+					<property name="connectionStepSize" value="1000" />
+					<property name="connectionStepIntervalMilli" value="1000" />
+					<property name="topic" value="mqtt/attack" />
+				</bean>
+			</property>
+		</bean>
+	</util:list>
+
+	<util:list id="receives" value-type="me.jasonbaik.loadtester.valueobject.Receive">
+		<bean class="me.jasonbaik.loadtester.valueobject.Receive">
+			<property name="receiverConfig">
+				<bean class="me.jasonbaik.loadtester.receiver.impl.MQTTReplyingMQTTSubscriberConfig">
+					<property name="topic" value="mqtt/attack" />
+					<property name="mqttBroker" value="tcp://localhost:1883?transport.enabledCipherSuites=TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256" />
+					<property name="mqttBrokerUsername" value="admin" />
+					<property name="mqttBrokerPassword" value="admin" />
+					<property name="qos" value="EXACTLY_ONCE" />
+				</bean>
+			</property>
+		</bean>
+	</util:list>
+
+</beans>

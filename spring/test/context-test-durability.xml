@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ctx="http://www.springframework.org/schema/context" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+	<util:map id="sslProperties">
+		<entry key="com.ibm.ssl.protocol" value="TLSv1.2" />
+		<entry key="com.ibm.ssl.keyStore" value="keystore/client.ks" />
+		<entry key="com.ibm.ssl.keyStorePassword" value="password" />
+		<entry key="com.ibm.ssl.trustStore" value="keystore/broker.ks" />
+		<entry key="com.ibm.ssl.trustStorePassword" value="password" />
+		<entry key="com.ibm.ssl.enabledCipherSuites" value="TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256" />
+		<entry key="com.ibm.ssl.clientAuthentication" value="true" />
+	</util:map>
+
+	<bean id="mqttSubscriptionDurabilityTest" class="me.jasonbaik.loadtester.tests.MQTTSubscriptionDurabilityTest">
+		<property name="numSent" value="1000" />
+		<property name="topic" value="durability/test/topic" />
+		<property name="senderId" value="sender" />
+		<property name="sendBroker" value="ssl://172.31.9.88:1883" />
+		<property name="receiverId" value="receiver" />
+		<property name="receiveBroker" value="ssl://172.31.9.202:1883" />
+		<property name="receiveReconnectBroker" value="ssl://172.31.6.35:1883" />
+		<property name="brokerUsername" value="admin" />
+		<property name="brokerPassword" value="admin" />
+		<property name="sslProperties" ref="sslProperties" />
+		<property name="maxWaitTime" value="10000" />
+	</bean>
+
+	<bean id="jmsSubscriptionDurabilityTest" class="me.jasonbaik.loadtester.tests.JMSSubscriptionDurabilityTest">
+		<property name="numSent" value="1000" />
+		<property name="topic" value="durability.test.topic" />
+		<property name="senderId" value="sender" />
+		<property name="sendBroker" value="tcp://172.31.9.88:61616" />
+		<property name="receiverId" value="receiver" />
+		<property name="receiveBroker" value="tcp://172.31.9.202:61616" />
+		<property name="receiveReconnectBroker" value="tcp://172.31.6.35:61616" />
+		<property name="brokerUsername" value="admin" />
+		<property name="brokerPassword" value="admin" />
+		<property name="maxWaitTime" value="10000" />
+	</bean>
+
+</beans>

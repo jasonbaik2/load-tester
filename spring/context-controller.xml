@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:osgi="http://camel.apache.org/schema/osgi" xmlns:ctx="http://www.springframework.org/schema/context"
+	xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+">
+
+	<import resource="file:spring/context-base.xml" />
+
+	<bean id="amq" class="org.apache.activemq.xbean.BrokerFactoryBean">
+		<property name="config" value="file:config/amq/activemq.xml" />
+		<property name="start" value="true" />
+	</bean>
+
+	<bean id="connFactory" class="org.apache.activemq.ActiveMQConnectionFactory" depends-on="amq">
+		<constructor-arg value="${amq.url}" />
+	</bean>
+
+	<bean id="controller" class="me.jasonbaik.loadtester.BrokerLoadTestController" parent="node" init-method="init" lazy-init="true">
+		<property name="brokers" ref="brokers" />
+		<property name="gcBroker" value="${gcBroker}" />
+		<property name="scenarios" ref="scenarios" />
+	</bean>
+
+	<util:map id="sslProperties">
+		<entry key="com.ibm.ssl.protocol" value="TLSv1.2" />
+		<entry key="com.ibm.ssl.keyStore" value="keystore/client.ks" />
+		<entry key="com.ibm.ssl.keyStorePassword" value="password" />
+		<entry key="com.ibm.ssl.trustStore" value="keystore/broker.ks" />
+		<entry key="com.ibm.ssl.trustStorePassword" value="password" />
+		<entry key="com.ibm.ssl.enabledCipherSuites" value="TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256" />
+		<entry key="com.ibm.ssl.clientAuthentication" value="true" />
+	</util:map>
+
+</beans>
