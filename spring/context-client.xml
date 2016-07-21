@@ -8,7 +8,7 @@
 	<import resource="file:spring/context-base.xml" />
 
 	<bean id="connFactory" class="org.apache.activemq.ActiveMQConnectionFactory">
-		<constructor-arg value="${amq.url}" />
+		<constructor-arg value="${controller.amq.url}" />
 	</bean>
 
 	<bean id="client" class="me.jasonbaik.loadtester.Client" parent="node" init-method="init" lazy-init="true">

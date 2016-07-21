@@ -28,3 +28,5 @@ client and server
 Initial handshake takes the most time
 
 TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA
+
+inactivity monitor disabled

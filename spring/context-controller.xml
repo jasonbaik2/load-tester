@@ -8,12 +8,12 @@
 	<import resource="file:spring/context-base.xml" />
 
 	<bean id="amq" class="org.apache.activemq.xbean.BrokerFactoryBean">
-		<property name="config" value="file:config/amq/activemq.xml" />
+		<property name="config" value="${controller.amq.config}" />
 		<property name="start" value="true" />
 	</bean>
 
 	<bean id="connFactory" class="org.apache.activemq.ActiveMQConnectionFactory" depends-on="amq">
-		<constructor-arg value="${amq.url}" />
+		<constructor-arg value="${controller.amq.url}" />
 	</bean>
 
 	<bean id="controller" class="me.jasonbaik.loadtester.BrokerLoadTestController" parent="node" init-method="init" lazy-init="true">
