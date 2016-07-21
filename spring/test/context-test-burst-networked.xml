@@ -10,25 +10,25 @@
 	<util:list id="brokers" value-type="me.jasonbaik.loadtester.valueobject.Broker">
 		<bean class="me.jasonbaik.loadtester.valueobject.Broker">
 			<property name="url" value="tcp://172.31.9.88:61616" />
-			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://172.31.9.88:1099/karaf-root" />
+			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://172.31.61.1:1099/karaf-root" />
 			<property name="username" value="admin" />
 			<property name="password" value="admin" />
 		</bean>
 		<bean class="me.jasonbaik.loadtester.valueobject.Broker">
 			<property name="url" value="tcp://172.31.9.202:61616" />
-			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://172.31.9.202:1099/karaf-root" />
+			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://172.31.13.122:1099/karaf-root" />
 			<property name="username" value="admin" />
 			<property name="password" value="admin" />
 		</bean>
 		<bean class="me.jasonbaik.loadtester.valueobject.Broker">
 			<property name="url" value="tcp://172.31.6.35:61616" />
-			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://172.31.6.35:1099/karaf-root" />
+			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://172.31.14.98:1099/karaf-root" />
 			<property name="username" value="admin" />
 			<property name="password" value="admin" />
 		</bean>
 		<bean class="me.jasonbaik.loadtester.valueobject.Broker">
 			<property name="url" value="tcp:///172.31.6.233:61616" />
-			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://172.31.6.233:1099/karaf-root" />
+			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://172.31.3.235:1099/karaf-root" />
 			<property name="username" value="admin" />
 			<property name="password" value="admin" />
 		</bean>
@@ -37,10 +37,10 @@
 	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.RoundRobinMQTTPublisherConfig">
 		<property name="mqttBrokers">
 			<array>
-				<value>tlsv1.2://172.31.9.88:1883?transport.enabledCipherSuites=TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256</value>
-				<value>tlsv1.2://172.31.9.202:1883?transport.enabledCipherSuites=TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256</value>
-				<value>tlsv1.2://172.31.6.35:1883?transport.enabledCipherSuites=TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256</value>
-				<value>tlsv1.2://172.31.6.233:1883?transport.enabledCipherSuites=TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256</value>
+				<value>tlsv1.2://172.31.61.1:1883?transport.enabledCipherSuites=TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256</value>
+				<value>tlsv1.2://172.31.13.122:1883?transport.enabledCipherSuites=TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256</value>
+				<value>tlsv1.2://172.31.14.98:1883?transport.enabledCipherSuites=TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256</value>
+				<value>tlsv1.2://172.31.3.235:1883?transport.enabledCipherSuites=TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256</value>
 			</array>
 		</property>
 		<property name="mqttBrokerUsername" value="admin" />
@@ -55,6 +55,7 @@
 		<property name="messagePoolSize" value="5000" />
 		<property name="messageByteLength" value="1024" />
 		<property name="qos" value="EXACTLY_ONCE" />
+		<property name="cleanSession" value="true" />
 		<property name="keepAliveIntervalMilli" value="0" />
 		<property name="connectionStepSize" value="1000" />
 		<property name="connectionStepIntervalMilli" value="10000" />
@@ -68,11 +69,11 @@
 	</bean>
 
 	<bean id="receiverConfig" class="me.jasonbaik.loadtester.receiver.impl.SynchronousMQTTReplyingJMSConsumerConfig">
-		<property name="jmsBroker" value="tcp://172.31.12.139:61616" />
+		<property name="jmsBroker" value="tcp://172.31.61.1:61616" />
 		<property name="jmsBrokerUsername" value="admin" />
 		<property name="jmsBrokerPassword" value="admin" />
 		<property name="queue" value="mqtt.attack.queue" />
-		<property name="mqttBroker" value="tlsv1.2://172.31.12.139:1883?transport.enabledCipherSuites=TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256" />
+		<property name="mqttBroker" value="tlsv1.2://172.31.61.1:1883?transport.enabledCipherSuites=TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256" />
 		<property name="mqttBrokerUsername" value="admin" />
 		<property name="mqttBrokerPassword" value="admin" />
 		<property name="keyStore" value="keystore/client.ks" />
