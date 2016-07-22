@@ -61,7 +61,7 @@ public class RandomSamplerTest {
 		long endTime = System.currentTimeMillis();
 
 		Assert.assertEquals(count, numRun);
-		Assert.assertTrue(endTime - startTime > interval * count * 0.9 && endTime - startTime < interval * count * 1.1);
+		Assert.assertTrue(endTime - startTime > interval * count * 0.8 && endTime - startTime < interval * count * 1.2);
 	}
 
 	@Test
@@ -107,8 +107,8 @@ public class RandomSamplerTest {
 
 		long endTime = System.currentTimeMillis();
 
-		Assert.assertTrue(numRun > duration / interval * 0.9 && numRun < duration / interval * 1.1);
-		Assert.assertTrue(endTime - startTime > duration * 0.9 && endTime - startTime < duration * 1.1);
+		Assert.assertTrue(numRun > duration / interval * 0.8 && numRun < duration / interval * 1.2);
+		Assert.assertTrue(endTime - startTime > duration * 0.8 && endTime - startTime < duration * 1.2);
 	}
 
 }

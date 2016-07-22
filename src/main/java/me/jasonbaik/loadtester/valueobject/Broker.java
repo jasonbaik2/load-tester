@@ -1,11 +1,18 @@
 package me.jasonbaik.loadtester.valueobject;
 
-public class Broker {
+import java.io.Serializable;
+import java.util.Map;
 
-	private String url;
+public class Broker implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	private String hostname;
 	private String jmxUrl;
 	private String username;
 	private String password;
+
+	private Map<Protocol, Connector> connectors;
 
 	public String getJmxUrl() {
 		return jmxUrl;
@@ -31,17 +38,25 @@ public class Broker {
 		this.password = password;
 	}
 
-	public String getUrl() {
-		return url;
+	public Map<Protocol, Connector> getConnectors() {
+		return connectors;
 	}
 
-	public void setUrl(String url) {
-		this.url = url;
+	public void setConnectors(Map<Protocol, Connector> connectors) {
+		this.connectors = connectors;
+	}
+
+	public String getHostname() {
+		return hostname;
+	}
+
+	public void setHostname(String hostname) {
+		this.hostname = hostname;
 	}
 
 	@Override
 	public String toString() {
-		return "Broker [brokerUrl=" + url + ", jmxUrl=" + jmxUrl + ", username=" + username + "]";
+		return "Broker [hostname=" + hostname + ", jmxUrl=" + jmxUrl + ", username=" + username + ", password=" + password + ", connectors=" + connectors + "]";
 	}
 
 }

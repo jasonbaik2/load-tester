@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ctx="http://www.springframework.org/schema/context" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+	<util:list id="brokers" value-type="me.jasonbaik.loadtester.valueobject.Broker">
+		<bean class="me.jasonbaik.loadtester.valueobject.Broker">
+			<property name="hostname" value="localhost" />
+			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://localhost:1099/karaf-root" />
+			<property name="username" value="admin" />
+			<property name="password" value="admin" />
+			<property name="connectors">
+				<util:map>
+					<entry key="MQTT">
+						<bean class="me.jasonbaik.loadtester.valueobject.Connector">
+							<property name="protocol" value="MQTT" />
+							<property name="port" value="1883" />
+						</bean>
+					</entry>
+					<entry key="JMS">
+						<bean class="me.jasonbaik.loadtester.valueobject.Connector">
+							<property name="protocol" value="JMS" />
+							<property name="port" value="61616" />
+						</bean>
+					</entry>
+				</util:map>
+			</property>
+		</bean>
+	</util:list>
+
+	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.RoundRobinPahoMQTTPublisherConfig">
+		<property name="brokers" ref="brokers" />
+		<property name="ssl" value="true" />
+		<property name="sslProperties" ref="sslProperties" />
+		<property name="duration" value="5" />
+		<property name="durationUnit" value="SECONDS" />
+		<property name="numConnections" value="100" />
+		<property name="messagePoolSize" value="5000" />
+		<property name="messageByteLength" value="1024" />
+		<property name="qos" value="2" />
+		<property name="keepAliveIntervalMilli" value="0" />
+		<property name="connectionStepSize" value="1000" />
+		<property name="connectionStepIntervalMilli" value="1000" />
+		<property name="topic" value="mqtt/attack" />
+	</bean>
+
+	<bean id="samplerConfig" class="me.jasonbaik.loadtester.sampler.impl.RandomSamplerConfig">
+		<property name="expectedInterval" value="500" />
+		<property name="expectedIntervalUnit" value="MILLISECONDS" />
+	</bean>
+
+	<bean id="receiverConfig" class="me.jasonbaik.loadtester.receiver.impl.SynchronousPahoMQTTReplyingJMSConsumerConfig">
+		<property name="brokers" ref="brokers" />
+		<property name="ssl" value="true" />
+		<property name="queue" value="mqtt.attack.queue" />
+		<property name="sslProperties" ref="sslProperties" />
+		<property name="cleanSession" value="false" />
+		<property name="qos" value="2" />
+	</bean>
+
+	<util:list id="scenarios" value-type="me.jasonbaik.loadtester.valueobject.Scenario">
+		<bean class="me.jasonbaik.loadtester.valueobject.Scenario">
+			<property name="name" value="n_1_publish_1_1_subscribe_local_paho" />
+			<property name="brokers" ref="brokers" />
+			<property name="sends" ref="sends" />
+			<property name="receives" ref="receives" />
+			<property name="reportDir" value="D:/report" />
+			<property name="gcBrokers" value="false" />
+		</bean>
+	</util:list>
+
+	<util:list id="sends" value-type="me.jasonbaik.loadtester.valueobject.Send">
+		<bean class="me.jasonbaik.loadtester.valueobject.Send">
+			<property name="name" value="send1" />
+			<property name="samplerConfig" ref="samplerConfig" />
+			<property name="senderConfig" ref="senderConfig" />
+		</bean>
+	</util:list>
+
+	<util:list id="receives" value-type="me.jasonbaik.loadtester.valueobject.Receive">
+		<bean class="me.jasonbaik.loadtester.valueobject.Receive">
+			<property name="name" value="receive1" />
+			<property name="receiverConfig" ref="receiverConfig" />
+		</bean>
+	</util:list>
+
+</beans>

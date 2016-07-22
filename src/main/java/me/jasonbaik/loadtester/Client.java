@@ -47,11 +47,6 @@ public class Client<S1, S2, R1> extends Node {
 	private String clientLog;
 
 	private void start() throws URISyntaxException, JMSException {
-	}
-
-	protected void init() throws URISyntaxException, JMSException {
-		super.init();
-
 		clientTopicConsumer = this.getSession().createConsumer(getClientTopic());
 		clientTopicConsumer.setMessageListener(new ClientTopicListener());
 
@@ -117,14 +112,21 @@ public class Client<S1, S2, R1> extends Node {
 		}
 
 		if (this.getClientLog() != null && this.getClientLog().length() > 0) {
-			File file = new File(this.getClientLog());
-			byte[] bytes = new byte[(int) file.length()];
+			try {
+				File file = new File(this.getClientLog());
 
-			InputStream is = new FileInputStream(file);
-			is.read(bytes, 0, (int) file.length());
-			is.close();
+				if (file.exists()) {
+					byte[] bytes = new byte[(int) file.length()];
 
-			data.add(new ReportData("client.log", bytes));
+					InputStream is = new FileInputStream(file);
+					is.read(bytes, 0, (int) file.length());
+					is.close();
+
+					data.add(new ReportData("client.log", bytes));
+				}
+			} catch (Exception e) {
+				logger.error("Failed to collect the client log", e);
+			}
 		}
 
 		return data;
@@ -243,15 +245,15 @@ public class Client<S1, S2, R1> extends Node {
 	}
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, URISyntaxException, JMSException, InterruptedException, JAXBException {
-		if (args.length == 2) {
-			System.setProperty("env", args[1]);
+		if (args.length == 1) {
+			System.setProperty("env", args[0]);
 
 		} else {
 			System.setProperty("env", "local");
 		}
 
 		@SuppressWarnings("resource")
-		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(args[0]);
+		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("file:spring/context-client.xml");
 		context.getBean(Client.class).start();
 	}
 

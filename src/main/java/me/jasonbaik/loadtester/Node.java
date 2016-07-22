@@ -1,12 +1,15 @@
 package me.jasonbaik.loadtester;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.URISyntaxException;
 import java.util.UUID;
 
+import javax.annotation.PostConstruct;
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
@@ -45,7 +48,8 @@ abstract class Node implements MessageListener {
 
 	private Topic clientTopic;
 
-	protected void init() throws URISyntaxException, JMSException {
+	@PostConstruct
+	public void init() throws URISyntaxException, JMSException {
 		conn = connFactory.createConnection();
 		session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
@@ -117,21 +121,9 @@ abstract class Node implements MessageListener {
 		return null;
 	}
 
-	static String readUserInput(String prompt) {
-		byte[] bytes = new byte[1024];
-
-		while (true) {
-			try {
-				logger.info(prompt);
-				int numRead = System.in.read(bytes);
-				byte[] answer = new byte[numRead];
-				System.arraycopy(bytes, 0, answer, 0, numRead);
-				return new String(answer).trim();
-
-			} catch (IOException e) {
-				logger.error(e);
-			}
-		}
+	static String readUserInput(String prompt) throws IOException {
+		logger.info(prompt);
+		return new BufferedReader(new InputStreamReader(System.in)).readLine();
 	}
 
 	public ConnectionFactory getConnFactory() {

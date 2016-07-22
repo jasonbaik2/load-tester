@@ -16,11 +16,7 @@
 		<constructor-arg value="${controller.amq.url}" />
 	</bean>
 
-	<bean id="controller" class="me.jasonbaik.loadtester.BrokerLoadTestController" parent="node" init-method="init" lazy-init="true">
-		<property name="brokers" ref="brokers" />
-		<property name="gcBroker" value="${gcBroker}" />
-		<property name="scenarios" ref="scenarios" />
-	</bean>
+	<bean id="controller" class="me.jasonbaik.loadtester.BrokerLoadTestController" parent="node" init-method="init" lazy-init="true" />
 
 	<util:map id="sslProperties">
 		<entry key="com.ibm.ssl.protocol" value="TLSv1.2" />

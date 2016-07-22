@@ -28,7 +28,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "file:spring/test/context-test-local-paho.xml" })
+@ContextConfiguration(locations = { "file:spring/context-controller.xml", "file:spring/test/broker/context-test-local-paho.xml" })
 public class RoundRobinPahoMQTTPublisherTest {
 
 	private static final Logger logger = LogManager.getLogger(RoundRobinPahoMQTTPublisher.class);

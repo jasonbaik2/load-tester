@@ -6,7 +6,7 @@
 
 	<properties>
 		<activemq.version>5.13.2</activemq.version>
-		<spring.version>4.2.6.RELEASE</spring.version>
+		<spring.version>4.1.9.RELEASE</spring.version>
 	</properties>
 
 	<dependencies>
@@ -51,6 +51,11 @@
 			<version>2.3.1</version>
 		</dependency>
 		<dependency>
+			<groupId>javax</groupId>
+			<artifactId>javaee-api</artifactId>
+			<version>7.0</version>
+		</dependency>
+		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>4.12</version>
@@ -60,12 +65,6 @@
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-test</artifactId>
 			<version>${spring.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>javax</groupId>
-			<artifactId>javaee-api</artifactId>
-			<version>7.0</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

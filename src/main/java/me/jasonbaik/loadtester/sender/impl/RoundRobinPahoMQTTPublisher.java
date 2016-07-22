@@ -10,14 +10,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.annotation.PreDestroy;
-import javax.xml.bind.JAXBException;
-
-import me.jasonbaik.loadtester.sampler.PayloadIterator;
-import me.jasonbaik.loadtester.sampler.Sampler;
-import me.jasonbaik.loadtester.sampler.SamplerTask;
-import me.jasonbaik.loadtester.sender.Sender;
-import me.jasonbaik.loadtester.util.RandomXmlGenerator;
+import me.jasonbaik.loadtester.client.MQTTClientFactory;
+import me.jasonbaik.loadtester.valueobject.Broker;
 import me.jasonbaik.loadtester.valueobject.Payload;
 import me.jasonbaik.loadtester.valueobject.ReportData;
 
@@ -31,37 +25,26 @@ import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
 import org.eclipse.paho.client.mqttv3.MqttSecurityException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
-public class RoundRobinPahoMQTTPublisher extends Sender<byte[], RoundRobinPahoMQTTPublisherConfig> {
+public class RoundRobinPahoMQTTPublisher extends AbstractRoundRobinMQTTPublisher<RoundRobinPahoMQTTPublisherConfig> {
 
 	private static final Logger logger = LogManager.getLogger(RoundRobinPahoMQTTPublisher.class);
 
 	private final String uuid = UUID.randomUUID().toString();
 
 	private List<MqttAsyncClient> clients;
+	private CountDownLatch connectionLatch;
+	private List<String> topicMismatchedMsgs = new LinkedList<String>();
 
-	private AtomicInteger clientIndex = new AtomicInteger(0);
-	private AtomicInteger seqNum = new AtomicInteger(0);
-	private AtomicInteger publishedCount = new AtomicInteger(0);
-	private AtomicInteger completedCount = new AtomicInteger(0);
 	private AtomicInteger disconnectedWhileInFlightCount = new AtomicInteger(0);
-	private AtomicInteger repliedCount = new AtomicInteger(0);
 
 	private List<Integer> publishedSeqNums = Collections.synchronizedList(new ArrayList<Integer>());
 	private List<Integer> completedSeqNums = Collections.synchronizedList(new ArrayList<Integer>());
 	private List<Integer> disconnectedInFlightSeqNums = Collections.synchronizedList(new ArrayList<Integer>());
 	private List<Integer> repliedSeqNums = Collections.synchronizedList(new ArrayList<Integer>());
-	private List<String> topicMismatchedMsgs = new LinkedList<String>();
-
-	private CountDownLatch connectionLatch;
-
-	private List<byte[]> payloads;
-
-	public RoundRobinPahoMQTTPublisher(RoundRobinPahoMQTTPublisherConfig config) {
-		super(config);
-	}
 
 	private class ConnectCallback implements IMqttActionListener {
 
@@ -148,13 +131,13 @@ public class RoundRobinPahoMQTTPublisher extends Sender<byte[], RoundRobinPahoMQ
 				}
 			}
 
-			logger.info("Replied: " + repliedCount.incrementAndGet());
+			logger.info("Replied: " + getRepliedCount().incrementAndGet());
 			repliedSeqNums.add(Integer.parseInt(Payload.extractMessageId(message.getPayload())));
 		}
 
 		@Override
 		public void deliveryComplete(IMqttDeliveryToken token) {
-			completedCount.incrementAndGet();
+			getSuccessCount().incrementAndGet();
 			printCounts();
 
 			if (token.getUserContext() != null) {
@@ -184,32 +167,45 @@ public class RoundRobinPahoMQTTPublisher extends Sender<byte[], RoundRobinPahoMQ
 	};
 
 	private void printCounts() {
-		logger.info("Published: " + publishedCount.get() + ", " + "Completed: " + completedCount.get() + ", Disconnected While in Flight: " + disconnectedWhileInFlightCount.get());
+		logger.info("Published: " + getPublishedCount().get() + ", " + "Completed: " + getSuccessCount().get() + ", Disconnected While in Flight: " + disconnectedWhileInFlightCount.get());
+	}
+
+	public RoundRobinPahoMQTTPublisher(RoundRobinPahoMQTTPublisherConfig config) {
+		super(config);
+		// TODO Auto-generated constructor stub
 	}
 
 	@Override
-	public void init() throws MqttException, InterruptedException, JAXBException {
+	public void init() throws Exception {
+		super.init();
+
 		clients = Collections.synchronizedList(new ArrayList<MqttAsyncClient>(getConfig().getNumConnections()));
 		connectionLatch = new CountDownLatch(getConfig().getNumConnections());
 
 		logger.info("Initiating " + getConfig().getNumConnections() + " connections with a step size of " + getConfig().getConnectionStepSize() + " and a step interval of "
 				+ getConfig().getConnectionStepIntervalMilli() + "ms...");
 
-		String[] brokers = getConfig().getMqttBrokers();
+		List<Broker> brokers = getConfig().getBrokers();
+		String[] brokerUrls = new String[brokers.size()];
+
+		for (int i = 0; i < brokers.size(); i++) {
+			brokerUrls[i] = MQTTClientFactory.getPahoConnectionUrl(brokers.get(i), getConfig().isSsl());
+		}
 
 		for (int i = 0; i < getConfig().getNumConnections(); i++) {
-			MqttAsyncClient mqttClient = new MqttAsyncClient(getNextBroker(), uuid + "-" + i, new MemoryPersistence());
+			Broker broker = getNextBroker();
+			MqttAsyncClient mqttClient = new MqttAsyncClient(MQTTClientFactory.getPahoConnectionUrl(broker, getConfig().isSsl()), uuid + "-" + i, new MemoryPersistence());
 
 			MqttConnectOptions options = new MqttConnectOptions();
 
-			if (getConfig().getMqttBrokers() != null) {
-				brokers = rotateBrokers(brokers);
-				options.setServerURIs(brokers);
+			if (getConfig().getBrokers().size() > 0) {
+				brokerUrls = rotateBrokers(brokerUrls);
+				options.setServerURIs(brokerUrls);
 			}
 
 			options.setCleanSession(getConfig().isCleanSession());
-			options.setUserName(getConfig().getMqttBrokerUsername());
-			options.setPassword(getConfig().getMqttBrokerPassword().toCharArray());
+			options.setUserName(broker.getUsername());
+			options.setPassword(broker.getPassword().toCharArray());
 			options.setKeepAliveInterval((int) (getConfig().getKeepAliveIntervalMilli() / 1000));
 
 			Properties props = new Properties();
@@ -233,23 +229,6 @@ public class RoundRobinPahoMQTTPublisher extends Sender<byte[], RoundRobinPahoMQ
 		}
 
 		logger.info("Successfully established all " + getConfig().getNumConnections() + " connections");
-
-		logger.info("Pre-generating a pool of " + getConfig().getMessagePoolSize() + " random payloads...");
-
-		payloads = new ArrayList<byte[]>(getConfig().getMessagePoolSize());
-
-		for (int i = 0; i < getConfig().getMessagePoolSize(); i++) {
-			payloads.add(RandomXmlGenerator.generate(getConfig().getMessageByteLength()));
-		}
-	}
-
-	private int brokerIndex = 0;
-
-	private String getNextBroker() {
-		if (getConfig().getMqttBrokers() != null) {
-			return getConfig().getMqttBrokers()[brokerIndex++ % getConfig().getMqttBrokers().length];
-		}
-		return getConfig().getMqttBroker();
 	}
 
 	static String[] rotateBrokers(String[] brokers) {
@@ -259,85 +238,16 @@ public class RoundRobinPahoMQTTPublisher extends Sender<byte[], RoundRobinPahoMQ
 		return rotated;
 	}
 
-	@PreDestroy
 	@Override
-	public void destroy() throws MqttException {
-		for (MqttAsyncClient client : clients) {
-			client.disconnect();
-		}
+	protected void roundRobinSend(int index, byte[] payload) throws MqttPersistenceException, MqttException {
+		int cIndex = getClientIndex().getAndIncrement() % clients.size();
+		String connectionId = uuid + "-" + (cIndex);
 
-		clients.clear();
-	}
-
-	@Override
-	public void send(Sampler<byte[], ?> sampler) throws Exception {
-		SamplerTask<byte[]> task = new SamplerTask<byte[]>() {
-
-			@Override
-			public void run(int index, byte[] payload) throws Exception {
-				int cIndex = clientIndex.getAndIncrement() % clients.size();
-				String connectionId = uuid + "-" + (cIndex);
-
-				logger.debug("Publishing a message using the client #" + cIndex);
-				clients.get(cIndex).publish(getConfig().getTopic(), Payload.toBytes(connectionId, index, payload), getConfig().getQos(), false, index, publishCallback);
-				publishedCount.incrementAndGet();
-				printCounts();
-				publishedSeqNums.add(index);
-			}
-
-		};
-
-		if (getConfig().getDuration() != null) {
-			logger.info("Publishing messages for " + getConfig().getDuration() + " " + getConfig().getDurationUnit());
-
-			PayloadIterator<byte[]> payloadIterator = new PayloadIterator<byte[]>() {
-
-				@Override
-				public void remove() {
-					throw new UnsupportedOperationException();
-				}
-
-				@Override
-				public byte[] next() {
-					return payloads.get(seqNum.getAndIncrement() % payloads.size());
-				}
-
-				@Override
-				public boolean hasNext() {
-					return true;
-				}
-
-			};
-
-			sampler.during(task, payloadIterator, getConfig().getDuration(), getConfig().getDurationUnit());
-
-		} else if (getConfig().getNumMessages() != null) {
-			logger.info("Publishing " + getConfig().getNumMessages() + " messages...");
-
-			PayloadIterator<byte[]> payloadIterator = new PayloadIterator<byte[]>() {
-
-				@Override
-				public void remove() {
-					throw new UnsupportedOperationException();
-				}
-
-				@Override
-				public byte[] next() {
-					return payloads.get(seqNum.getAndIncrement() % payloads.size());
-				}
-
-				@Override
-				public boolean hasNext() {
-					if (seqNum.get() == getConfig().getNumMessages()) {
-						return false;
-					}
-					return true;
-				}
-
-			};
-
-			sampler.forEach(task, payloadIterator);
-		}
+		logger.debug("Publishing a message using the client #" + cIndex);
+		clients.get(cIndex).publish(getConfig().getTopic(), Payload.toBytes(connectionId, index, payload), getConfig().getQos(), false, index, publishCallback);
+		getPublishedCount().incrementAndGet();
+		printCounts();
+		publishedSeqNums.add(index);
 	}
 
 	@Override
@@ -385,6 +295,15 @@ public class RoundRobinPahoMQTTPublisher extends Sender<byte[], RoundRobinPahoMQ
 		reports.add(new ReportData("Replied_Seq_Nums.csv", sb.toString().getBytes()));
 
 		return reports;
+	}
+
+	@Override
+	public void destroy() throws MqttException {
+		for (MqttAsyncClient client : clients) {
+			client.disconnect();
+		}
+
+		clients.clear();
 	}
 
 }

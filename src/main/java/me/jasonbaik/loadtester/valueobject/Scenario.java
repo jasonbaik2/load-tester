@@ -8,10 +8,12 @@ public class Scenario<S1, S2, R1> implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	private String name;
+	private List<Broker> brokers;
 	private List<Send<S1, S2>> sends;
 	private List<Receive<R1>> receives;
 	private long maxAttackTimeSeconds;
 	private String reportDir;
+	private boolean gcBrokers;
 
 	public List<Send<S1, S2>> getSends() {
 		return sends;
@@ -51,6 +53,28 @@ public class Scenario<S1, S2, R1> implements Serializable {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public List<Broker> getBrokers() {
+		return brokers;
+	}
+
+	public void setBrokers(List<Broker> brokers) {
+		this.brokers = brokers;
+	}
+
+	public boolean isGcBrokers() {
+		return gcBrokers;
+	}
+
+	public void setGcBrokers(boolean gcBrokers) {
+		this.gcBrokers = gcBrokers;
+	}
+
+	@Override
+	public String toString() {
+		return "Scenario [name=" + name + ", brokers=" + brokers + ", sends=" + sends + ", receives=" + receives + ", maxAttackTimeSeconds=" + maxAttackTimeSeconds + ", reportDir=" + reportDir
+				+ ", gcBrokers=" + gcBrokers + "]";
 	}
 
 }

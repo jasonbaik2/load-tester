@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
@@ -19,9 +20,12 @@ import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.Session;
 
+import me.jasonbaik.loadtester.client.MQTTClientFactory;
 import me.jasonbaik.loadtester.constant.StringConstants;
 import me.jasonbaik.loadtester.receiver.Receiver;
+import me.jasonbaik.loadtester.valueobject.Broker;
 import me.jasonbaik.loadtester.valueobject.Payload;
+import me.jasonbaik.loadtester.valueobject.Protocol;
 import me.jasonbaik.loadtester.valueobject.ReportData;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
@@ -108,24 +112,30 @@ public class SynchronousPahoMQTTReplyingJMSConsumer extends Receiver<Synchronous
 
 	@Override
 	public void init() throws Exception {
-		connFactory = new ActiveMQConnectionFactory(getConfig().getJmsBrokerUsername(), getConfig().getJmsBrokerPassword(), getConfig().getJmsBroker());
+		Broker broker = getConfig().getBrokers().get(0);
+
+		connFactory = new ActiveMQConnectionFactory(broker.getUsername(), broker.getPassword(), "tcp://" + broker.getHostname() + ":" + broker.getConnectors().get(Protocol.JMS).getPort());
 		conn = connFactory.createConnection();
 		session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
 		consumer = session.createConsumer(session.createQueue(getConfig().getQueue()));
 
 		logger.info("Successfully established a JMS connection");
 
-		mqttClient = new MqttClient(getNextBroker(), uuid, new MemoryPersistence());
+		mqttClient = new MqttClient(MQTTClientFactory.getPahoConnectionUrl(broker, getConfig().isSsl()), uuid, new MemoryPersistence());
 
 		MqttConnectOptions options = new MqttConnectOptions();
 
-		if (getConfig().getMqttBrokers() != null) {
-			options.setServerURIs(getConfig().getMqttBrokers());
+		List<Broker> brokers = getConfig().getBrokers();
+		String[] brokerUrls = new String[brokers.size()];
+
+		for (int i = 0; i < brokers.size(); i++) {
+			brokerUrls[i] = MQTTClientFactory.getPahoConnectionUrl(brokers.get(i), getConfig().isSsl());
 		}
 
+		options.setServerURIs(brokerUrls);
 		options.setCleanSession(getConfig().isCleanSession());
-		options.setUserName(getConfig().getMqttBrokerUsername());
-		options.setPassword(getConfig().getMqttBrokerPassword().toCharArray());
+		options.setUserName(broker.getUsername());
+		options.setPassword(broker.getPassword().toCharArray());
 		options.setKeepAliveInterval(0);
 
 		Properties props = new Properties();
@@ -140,11 +150,8 @@ public class SynchronousPahoMQTTReplyingJMSConsumer extends Receiver<Synchronous
 
 	private int brokerIndex = 0;
 
-	private String getNextBroker() {
-		if (getConfig().getMqttBrokers() != null) {
-			return getConfig().getMqttBrokers()[brokerIndex++ % getConfig().getMqttBrokers().length];
-		}
-		return getConfig().getMqttBroker();
+	protected Broker getNextBroker() {
+		return getConfig().getBrokers().get(brokerIndex++ % getConfig().getBrokers().size());
 	}
 
 	static String[] rotateBrokers(String[] brokers) {

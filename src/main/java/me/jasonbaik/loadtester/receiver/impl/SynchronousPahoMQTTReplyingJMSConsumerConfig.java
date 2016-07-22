@@ -1,23 +1,18 @@
 package me.jasonbaik.loadtester.receiver.impl;
 
+import java.util.List;
 import java.util.Map;
 
 import me.jasonbaik.loadtester.receiver.ReceiverConfig;
+import me.jasonbaik.loadtester.valueobject.Broker;
 
 public class SynchronousPahoMQTTReplyingJMSConsumerConfig extends ReceiverConfig<SynchronousPahoMQTTReplyingJMSConsumer> {
 
 	private static final long serialVersionUID = 1L;
 
-	private String jmsBroker;
-	private String jmsBrokerUsername;
-	private String jmsBrokerPassword;
-
+	private List<Broker> brokers;
+	private boolean ssl;
 	private String queue;
-
-	private String mqttBroker;
-	private String[] mqttBrokers;
-	private String mqttBrokerUsername;
-	private String mqttBrokerPassword;
 	private boolean cleanSession;
 	private int qos;
 	private int retryAttempts = Integer.MAX_VALUE;
@@ -27,54 +22,6 @@ public class SynchronousPahoMQTTReplyingJMSConsumerConfig extends ReceiverConfig
 	@Override
 	public Class<SynchronousPahoMQTTReplyingJMSConsumer> getReceiverClass() {
 		return SynchronousPahoMQTTReplyingJMSConsumer.class;
-	}
-
-	public String getJmsBroker() {
-		return jmsBroker;
-	}
-
-	public void setJmsBroker(String jmsBroker) {
-		this.jmsBroker = jmsBroker;
-	}
-
-	public String getJmsBrokerUsername() {
-		return jmsBrokerUsername;
-	}
-
-	public void setJmsBrokerUsername(String jmsBrokerUsername) {
-		this.jmsBrokerUsername = jmsBrokerUsername;
-	}
-
-	public String getJmsBrokerPassword() {
-		return jmsBrokerPassword;
-	}
-
-	public void setJmsBrokerPassword(String jmsBrokerPassword) {
-		this.jmsBrokerPassword = jmsBrokerPassword;
-	}
-
-	public String getMqttBroker() {
-		return mqttBroker;
-	}
-
-	public void setMqttBroker(String mqttBroker) {
-		this.mqttBroker = mqttBroker;
-	}
-
-	public String getMqttBrokerUsername() {
-		return mqttBrokerUsername;
-	}
-
-	public void setMqttBrokerUsername(String mqttBrokerUsername) {
-		this.mqttBrokerUsername = mqttBrokerUsername;
-	}
-
-	public String getMqttBrokerPassword() {
-		return mqttBrokerPassword;
-	}
-
-	public void setMqttBrokerPassword(String mqttBrokerPassword) {
-		this.mqttBrokerPassword = mqttBrokerPassword;
 	}
 
 	public String getQueue() {
@@ -101,14 +48,6 @@ public class SynchronousPahoMQTTReplyingJMSConsumerConfig extends ReceiverConfig
 		this.sslProperties = sslProperties;
 	}
 
-	public String[] getMqttBrokers() {
-		return mqttBrokers;
-	}
-
-	public void setMqttBrokers(String[] mqttBrokers) {
-		this.mqttBrokers = mqttBrokers;
-	}
-
 	public boolean isCleanSession() {
 		return cleanSession;
 	}
@@ -125,10 +64,26 @@ public class SynchronousPahoMQTTReplyingJMSConsumerConfig extends ReceiverConfig
 		this.retryAttempts = retryAttempts;
 	}
 
+	public List<Broker> getBrokers() {
+		return brokers;
+	}
+
+	public void setBrokers(List<Broker> brokers) {
+		this.brokers = brokers;
+	}
+
+	public boolean isSsl() {
+		return ssl;
+	}
+
+	public void setSsl(boolean ssl) {
+		this.ssl = ssl;
+	}
+
 	@Override
 	public String toString() {
-		return "SynchronousPahoMQTTReplyingJMSConsumerConfig [jmsBroker=" + jmsBroker + ", jmsBrokerUsername=" + jmsBrokerUsername + ", queue=" + queue + ", mqttBroker=" + mqttBroker
-				+ ", mqttBrokers=" + mqttBrokers + ", mqttBrokerUsername=" + mqttBrokerUsername + ", cleanSession=" + cleanSession + ", qos=" + qos + ", sslProperties=" + sslProperties + "]";
+		return "SynchronousPahoMQTTReplyingJMSConsumerConfig [brokers=" + brokers + ", ssl=" + ssl + ", queue=" + queue + ", cleanSession=" + cleanSession + ", qos=" + qos + ", retryAttempts="
+				+ retryAttempts + ", sslProperties=" + sslProperties + "]";
 	}
 
 }

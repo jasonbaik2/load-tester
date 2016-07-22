@@ -20,8 +20,9 @@ import javax.jms.MessageListener;
 import javax.jms.Session;
 import javax.net.ssl.SSLContext;
 
-import me.jasonbaik.loadtester.sender.impl.RoundRobinMQTTPublisherConfig;
+import me.jasonbaik.loadtester.client.MQTTClientFactory;
 import me.jasonbaik.loadtester.util.SSLUtil;
+import me.jasonbaik.loadtester.valueobject.Broker;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -36,7 +37,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(locations = { "file:spring/test/context-test-local.xml" })
+@ContextConfiguration(locations = { "file:spring/context-controller.xml", "file:spring/test/broker/context-test-local.xml" })
 public class RoundRobinMQTTPublisherTest {
 
 	private static final Logger logger = LogManager.getLogger(RoundRobinMQTTPublisherTest.class);
@@ -67,12 +68,14 @@ public class RoundRobinMQTTPublisherTest {
 		jmsConn.start();
 
 		// Try an SSL MQTT connection
+		Broker broker = config.getBrokers().get(0);
+
 		MQTT client = new MQTT();
-		client.setHost(config.getMqttBroker());
+		client.setHost(MQTTClientFactory.getFusesourceConnectionUrl(broker, true));
 		client.setClientId("ssl-test");
 		client.setCleanSession(true);
-		client.setUserName(config.getMqttBrokerUsername());
-		client.setPassword(config.getMqttBrokerPassword());
+		client.setUserName(broker.getUsername());
+		client.setPassword(broker.getPassword());
 		client.setKeepAlive((short) (config.getKeepAliveIntervalMilli() / 1000));
 		client.setConnectAttemptsMax(1);
 		client.setReconnectAttemptsMax(1);

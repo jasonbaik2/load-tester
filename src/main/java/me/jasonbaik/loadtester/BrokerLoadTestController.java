@@ -38,48 +38,56 @@ import me.jasonbaik.loadtester.valueobject.Send;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.xbean.spring.context.ClassPathXmlApplicationContext;
+import org.apache.xbean.spring.context.ResourceXmlApplicationContext;
 import org.springframework.beans.BeansException;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.context.ApplicationContext;
+import org.springframework.core.io.FileSystemResource;
 
 public class BrokerLoadTestController<S1, S2, R1> extends Node {
 
 	private static final Logger logger = LogManager.getLogger(BrokerLoadTestController.class);
 
-	private Map<String, Queue> clientUuidQueueMap = new HashMap<String, Queue>();
+	private ApplicationContext controllerContext;
+
+	private Map<String, Queue> clientQueueMap = new HashMap<String, Queue>();
 	private Map<String, List<ReportData>> reportData = new HashMap<String, List<ReportData>>();
 	private BlockingQueue<Message> clientMessages = new LinkedBlockingQueue<Message>();
 
 	private List<Broker> brokers;
-	private boolean gcBroker = true;
 
-	private List<Scenario<S1, S2, R1>> scenarios;
 	private Scenario<S1, S2, R1> currentScenario;
 
 	private void start() throws Exception {
 		try {
-			for (Scenario<S1, S2, R1> scenario : scenarios) {
-				this.currentScenario = scenario;
+			while (true) {
+				List<Scenario<S1, S2, R1>> scenarios = loadScenarios();
 
-				while (true) {
-					try {
-						if (gcBroker) {
-							gcBrokers();
-						}
+				for (Scenario<S1, S2, R1> scenario : scenarios) {
+					this.currentScenario = scenario;
 
-						discoverClients();
-						setupClients();
-						attack();
-						collectData();
-						report();
+					while (true) {
+						try {
+							discoverClients();
+							setupClients();
 
-					} catch (Exception e) {
-						logger.error("Failed to run the scenario=" + currentScenario, e);
+							if (scenario.isGcBrokers()) {
+								gcBrokers();
+							}
 
-					} finally {
-						releaseClients();
+							attack();
+							collectData();
+							report();
 
-						if (!promptForRerun()) {
-							break;
+						} catch (Exception e) {
+							logger.error("Failed to run the scenario=" + currentScenario, e);
+
+						} finally {
+							releaseClients();
+
+							if (!promptForRerun()) {
+								break;
+							}
 						}
 					}
 				}
@@ -89,7 +97,45 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 		}
 	}
 
-	private boolean promptForRerun() {
+	private List<Scenario<S1, S2, R1>> loadScenarios() throws IOException {
+		File testContextFile = null;
+		File[] knownTestContextFiles = new File("spring/test/broker").listFiles();
+
+		while (true) {
+			for (int i = 0; i < knownTestContextFiles.length; i++) {
+				System.out.println("[" + i + "] " + knownTestContextFiles[i].getName());
+			}
+
+			String answer = readUserInput("Select one of the test contexts, or enter a new path to test context: ");
+
+			try {
+				int num = Integer.parseInt(answer);
+
+				if (0 <= num && num < knownTestContextFiles.length) {
+					testContextFile = knownTestContextFiles[num];
+					break;
+				}
+			} catch (NumberFormatException e) {
+				testContextFile = new File(answer);
+
+				if (!testContextFile.exists()) {
+					logger.error("The file does not exist. Try again.");
+				} else {
+					break;
+				}
+			}
+		}
+
+		ResourceXmlApplicationContext testContext = new ResourceXmlApplicationContext(new FileSystemResource(testContextFile), controllerContext);
+
+		try {
+			return testContext.getBean("scenarios", List.class);
+		} finally {
+			testContext.close();
+		}
+	}
+
+	private boolean promptForRerun() throws IOException {
 		boolean repeat = false;
 
 		while (true) {
@@ -108,7 +154,7 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 	private void gcBrokers() throws IOException, InstanceNotFoundException, MalformedObjectNameException, MBeanException, ReflectionException, InterruptedException {
 		logger.info("GC'ing the brokers via JMX before the attack");
 
-		for (Broker b : brokers) {
+		for (Broker b : currentScenario.getBrokers()) {
 			HashMap<String, Object> env = new HashMap<String, Object>();
 			env.put(JMXConnector.CREDENTIALS, new String[] { b.getUsername(), b.getPassword() });
 			JMXServiceURL target = new JMXServiceURL(b.getJmxUrl());
@@ -119,7 +165,7 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 			connector.close();
 		}
 
-		logger.info("Sleeping 5 seconds to allow the broker to GC");
+		logger.info("Sleeping 5 seconds to allow the brokers to GC");
 		Thread.sleep(5000);
 	}
 
@@ -128,7 +174,7 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 
 		int numClients = currentScenario.getSends().size() + currentScenario.getReceives().size();
 
-		while (clientUuidQueueMap.size() < numClients) {
+		while (clientQueueMap.size() < numClients) {
 			logger.info("Discovering clients...");
 			sendCommand(this.getClientTopic(), Command.ACQUIRE, null);
 
@@ -136,12 +182,12 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 
 			while (null != (msg = clientMessages.poll(1000, TimeUnit.MILLISECONDS))) {
 				if (Command.ACQUIREACK.name().equals(msg.getStringProperty(StringConstants.COMMAND))) {
-					if (clientUuidQueueMap.size() < numClients) {
+					if (clientQueueMap.size() < numClients) {
 						String replierUUID = msg.getStringProperty(StringConstants.UUID);
 
-						if (!clientUuidQueueMap.keySet().contains(msg.getStringProperty(StringConstants.UUID))) {
+						if (!clientQueueMap.keySet().contains(msg.getStringProperty(StringConstants.UUID))) {
 							logger.info("Client " + replierUUID + " replied.");
-							clientUuidQueueMap.put(replierUUID, (Queue) msg.getJMSReplyTo());
+							clientQueueMap.put(replierUUID, (Queue) msg.getJMSReplyTo());
 						}
 
 					} else {
@@ -162,7 +208,7 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 	private void setupClients() throws Exception {
 		logger.info("Setting up sender clients...");
 
-		Iterator<Entry<String, Queue>> clientQueueIter = clientUuidQueueMap.entrySet().iterator();
+		Iterator<Entry<String, Queue>> clientQueueIter = clientQueueMap.entrySet().iterator();
 
 		for (Send<S1, S2> send : currentScenario.getSends()) {
 			Entry<String, Queue> entry = clientQueueIter.next();
@@ -220,7 +266,7 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 
 		int doneClients = 0;
 
-		while (doneClients < clientUuidQueueMap.size()) {
+		while (doneClients < clientQueueMap.size()) {
 			Message msg = clientMessages.take();
 			String clientUUID = msg.getStringProperty(StringConstants.UUID);
 			String command = msg.getStringProperty(StringConstants.COMMAND);
@@ -251,7 +297,7 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 
 		int doneClients = 0;
 
-		while (doneClients < clientUuidQueueMap.size()) {
+		while (doneClients < clientQueueMap.size()) {
 			Message msg = clientMessages.take();
 			String clientUUID = msg.getStringProperty(StringConstants.UUID);
 			String command = msg.getStringProperty(StringConstants.COMMAND);
@@ -355,33 +401,34 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 		logger.info("Successfully destroyed the controller");
 	}
 
-	private void releaseClients() throws JMSException {
+	private void releaseClients() throws Exception {
 		logger.info("Releasing the acquired clients...");
 
 		sendCommand(getClientTopic(), Command.RELEASE, null);
-		clientUuidQueueMap.clear();
+
+		int doneClients = 0;
+
+		while (doneClients < clientQueueMap.size()) {
+			Message msg = clientMessages.take();
+			String clientUUID = msg.getStringProperty(StringConstants.UUID);
+			String command = msg.getStringProperty(StringConstants.COMMAND);
+
+			if (Command.RELEASEACK.name().equals(command)) {
+				logger.info("Successfully released the client uuid=" + clientUUID);
+				doneClients++;
+
+			} else if (Command.ERROR.name().equals(command)) {
+				throw new Exception("Client uuid=" + clientUUID + " failed to be released. Aborting the test...");
+			}
+		}
+
+		clientQueueMap.clear();
 		reportData.clear();
 	}
 
 	@Override
 	public void onMessage(Message message) {
 		clientMessages.add(message);
-	}
-
-	public List<Scenario<S1, S2, R1>> getScenarios() {
-		return scenarios;
-	}
-
-	public void setScenarios(List<Scenario<S1, S2, R1>> scenarios) {
-		this.scenarios = scenarios;
-	}
-
-	public boolean isGcBroker() {
-		return gcBroker;
-	}
-
-	public void setGcBroker(boolean gcBroker) {
-		this.gcBroker = gcBroker;
 	}
 
 	public List<Broker> getBrokers() {
@@ -393,16 +440,18 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 	}
 
 	public static void main(String[] args) throws BeansException, Exception {
-		if (args.length == 2) {
-			System.setProperty("env", args[1]);
+		if (args.length == 1) {
+			System.setProperty("env", args[0]);
 
 		} else {
 			System.setProperty("env", "local");
 		}
 
-		@SuppressWarnings("resource")
-		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(args[0]);
-		context.getBean(BrokerLoadTestController.class).start();
+		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("file:spring/context-controller.xml");
+		BrokerLoadTestController<?, ?, ?> controller = context.getBean(BrokerLoadTestController.class);
+		controller.controllerContext = context;
+		controller.start();
+		context.close();
 	}
 
 }

@@ -18,11 +18,14 @@ import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.Session;
 
+import me.jasonbaik.loadtester.client.MQTTClientFactory;
 import me.jasonbaik.loadtester.constant.StringConstants;
 import me.jasonbaik.loadtester.receiver.Receiver;
 import me.jasonbaik.loadtester.util.MQTTFlightTracer;
 import me.jasonbaik.loadtester.util.SSLUtil;
+import me.jasonbaik.loadtester.valueobject.Broker;
 import me.jasonbaik.loadtester.valueobject.Payload;
+import me.jasonbaik.loadtester.valueobject.Protocol;
 import me.jasonbaik.loadtester.valueobject.ReportData;
 
 import org.apache.activemq.ActiveMQConnectionFactory;
@@ -56,7 +59,9 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 
 	@Override
 	public void init() throws Exception {
-		connFactory = new ActiveMQConnectionFactory(getConfig().getJmsBrokerUsername(), getConfig().getJmsBrokerPassword(), getConfig().getJmsBroker());
+		Broker broker = getConfig().getBrokers().get(0);
+
+		connFactory = new ActiveMQConnectionFactory(broker.getUsername(), broker.getPassword(), "tcp://" + broker.getHostname() + ":" + broker.getConnectors().get(Protocol.JMS).getPort());
 		conn = connFactory.createConnection();
 		session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
 		consumer = session.createConsumer(session.createQueue(getConfig().getQueue()));
@@ -64,11 +69,11 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 		logger.info("Successfully established a JMS connection");
 
 		MQTT client = new MQTT();
-		client.setHost(getConfig().getMqttBroker());
+		client.setHost(MQTTClientFactory.getFusesourceConnectionUrl(broker, getConfig().isSsl()));
 		client.setClientId(uuid);
 		client.setCleanSession(getConfig().isCleanSession());
-		client.setUserName(getConfig().getMqttBrokerUsername());
-		client.setPassword(getConfig().getMqttBrokerPassword());
+		client.setUserName(broker.getUsername());
+		client.setPassword(broker.getPassword());
 		client.setKeepAlive((short) 0);
 		client.setSslContext(SSLUtil.createSSLContext(getConfig().getKeyStore(), getConfig().getKeyStorePassword(), getConfig().getTrustStore(), getConfig().getTrustStorePassword()));
 		client.setTracer(tracer);
