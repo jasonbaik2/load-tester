@@ -7,8 +7,8 @@
 
 	<util:list id="brokers" value-type="me.jasonbaik.loadtester.valueobject.Broker">
 		<bean class="me.jasonbaik.loadtester.valueobject.Broker">
-			<property name="hostname" value="localhost" />
-			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://localhost:1099/karaf-root" />
+			<property name="hostname" value="172.31.61.1" />
+			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://172.31.61.1:1099/karaf-root" />
 			<property name="username" value="admin" />
 			<property name="password" value="admin" />
 			<property name="connectors">
@@ -38,7 +38,7 @@
 		<property name="keyStorePassword" value="password" />
 		<property name="trustStore" value="keystore/client.ks" />
 		<property name="trustStorePassword" value="password" />
-		<property name="numConnections" value="1000" />
+		<property name="numConnections" value="200000" />
 		<property name="messagePoolSize" value="5000" />
 		<property name="messageByteLength" value="1024" />
 		<property name="qos" value="EXACTLY_ONCE" />
@@ -67,7 +67,7 @@
 
 	<util:list id="scenarios" value-type="me.jasonbaik.loadtester.valueobject.Scenario">
 		<bean class="me.jasonbaik.loadtester.valueobject.Scenario">
-			<property name="name" value="n_1_publish_1_1_subscribe_local" />
+			<property name="name" value="n_1_publish_1_1_subscribe_max_connections" />
 			<property name="brokers" ref="brokers" />
 			<property name="sends" ref="sends" />
 			<property name="receives" ref="receives" />
@@ -79,6 +79,21 @@
 	<util:list id="sends" value-type="me.jasonbaik.loadtester.valueobject.Send">
 		<bean class="me.jasonbaik.loadtester.valueobject.Send">
 			<property name="name" value="send1" />
+			<property name="samplerConfig" ref="samplerConfig" />
+			<property name="senderConfig" ref="senderConfig" />
+		</bean>
+		<bean class="me.jasonbaik.loadtester.valueobject.Send">
+			<property name="name" value="send2" />
+			<property name="samplerConfig" ref="samplerConfig" />
+			<property name="senderConfig" ref="senderConfig" />
+		</bean>
+		<bean class="me.jasonbaik.loadtester.valueobject.Send">
+			<property name="name" value="send3" />
+			<property name="samplerConfig" ref="samplerConfig" />
+			<property name="senderConfig" ref="senderConfig" />
+		</bean>
+		<bean class="me.jasonbaik.loadtester.valueobject.Send">
+			<property name="name" value="send4" />
 			<property name="samplerConfig" ref="samplerConfig" />
 			<property name="senderConfig" ref="senderConfig" />
 		</bean>

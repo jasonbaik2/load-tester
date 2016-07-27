@@ -89,7 +89,7 @@ public class Client<S1, S2, R1> extends Node {
 					logger.error(e);
 
 					try {
-						sendCommand(owningControllerQueue.get(), Command.ERROR, null);
+						sendCommand(owningControllerQueue.get(), Command.ERROR, e.getMessage().getBytes());
 					} catch (JMSException e1) {
 						logger.error(e1);
 					}

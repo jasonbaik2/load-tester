@@ -38,10 +38,10 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 	private List<String> topicMismatchedMsgs = new LinkedList<String>();
 	private List<MQTTFlightTracer> tracers;
 
-	private class ConnectCallback implements Callback<Void> {
+	class ConnectCallback implements Callback<Void> {
 
-		private MQTT client;
-		private CallbackConnection conn;
+		MQTT client;
+		CallbackConnection conn;
 
 		private ConnectCallback(MQTT client, CallbackConnection conn) {
 			super();
