@@ -9,6 +9,7 @@ import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import me.jasonbaik.loadtester.client.MQTTClientFactory;
@@ -54,6 +55,8 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 	private volatile int numConnectionsInitiated;
 	private AtomicInteger numConnectionsEstablished = new AtomicInteger();
 	private AtomicInteger numSubscriptionsEstablished = new AtomicInteger();
+
+	private ScheduledExecutorService connectionService;
 
 	private ArrayBlockingQueue<Pair<String, CallbackConnection>> activeConnections;
 
@@ -218,7 +221,7 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 	@Override
 	public void send(Sampler<byte[], ?> sampler) throws Exception {
 		// Start a thread that periodically creates more connections with the broker(s)
-		ScheduledExecutorService connectionService = Executors.newSingleThreadScheduledExecutor();
+		connectionService = Executors.newSingleThreadScheduledExecutor();
 		connectionService.scheduleAtFixedRate(new Runnable() {
 
 			@Override
@@ -308,6 +311,15 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 
 	@Override
 	public void destroy() throws Exception {
+		connectionService.shutdown();
+
+		while (true) {
+			if (connectionService.isShutdown()) {
+				break;
+			}
+			connectionService.awaitTermination(5, TimeUnit.SECONDS);
+		}
+
 		for (Pair<String, CallbackConnection> conn : activeConnections) {
 			conn.value.disconnect(null);
 		}
