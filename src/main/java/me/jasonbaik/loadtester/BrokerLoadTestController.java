@@ -6,6 +6,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -100,6 +101,7 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 	private List<Scenario<S1, S2, R1>> loadScenarios() throws IOException {
 		File testContextFile = null;
 		File[] knownTestContextFiles = new File("spring/test/broker").listFiles();
+		Arrays.sort(knownTestContextFiles);
 
 		while (true) {
 			for (int i = 0; i < knownTestContextFiles.length; i++) {

@@ -32,7 +32,7 @@
 
 	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.RoundRobinMQTTPublisherConfig">
 		<property name="brokers" ref="brokers" />
-		<property name="ssl" value="true" />
+		<property name="ssl" value="false" />
 		<property name="keyStore" value="keystore/client.ks" />
 		<property name="keyStorePassword" value="password" />
 		<property name="trustStore" value="keystore/client.ks" />
@@ -56,7 +56,7 @@
 
 	<bean id="receiverConfig" class="me.jasonbaik.loadtester.receiver.impl.SynchronousMQTTReplyingJMSConsumerConfig">
 		<property name="brokers" ref="brokers" />
-		<property name="ssl" value="true" />
+		<property name="ssl" value="false" />
 		<property name="queue" value="mqtt.attack.queue" />
 		<property name="keyStore" value="keystore/client.ks" />
 		<property name="keyStorePassword" value="password" />

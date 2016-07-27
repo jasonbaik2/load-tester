@@ -1,16 +1,19 @@
 package me.jasonbaik.loadtester.util;
 
-import java.io.StringWriter;
+import java.io.ByteArrayOutputStream;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
 
+import org.apache.commons.lang.RandomStringUtils;
+
 public class RandomXmlGenerator {
 
 	public static void main(String[] args) {
 		try {
-			generate(10);
+			System.out.println(new String(generate(200)));
+			System.out.println(new String(generate(200)).getBytes().length);
 		} catch (JAXBException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -18,18 +21,20 @@ public class RandomXmlGenerator {
 	}
 
 	public static byte[] generate(int byteLength) throws JAXBException {
-		XmlItem item = new XmlItem(byteLength);
-		byte[] xmlText = objectToXML(item).getBytes();
-		return xmlText;
-	}
+		if (byteLength < 100) {
+			throw new IllegalArgumentException("Byte length must be >=100");
+		}
 
-	private static String objectToXML(XmlItem object) throws JAXBException {
+		XmlItem xmlItem = new XmlItem();
+		xmlItem.setId(Long.parseLong(RandomStringUtils.randomNumeric(8)));
+		xmlItem.setName(RandomStringUtils.randomAlphanumeric(10));
+		xmlItem.setPayload(RandomStringUtils.randomAlphanumeric(byteLength - 78));
+
 		JAXBContext context = JAXBContext.newInstance(XmlItem.class);
 		Marshaller m = context.createMarshaller();
-		m.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
-		StringWriter xmlText = new StringWriter();
-		m.marshal(object, xmlText);
-		return xmlText.toString();
+		m.setProperty(Marshaller.JAXB_FRAGMENT, Boolean.TRUE);
+		ByteArrayOutputStream os = new ByteArrayOutputStream();
+		m.marshal(xmlItem, os);
+		return os.toByteArray();
 	}
-
 }
