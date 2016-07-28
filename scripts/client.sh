@@ -11,4 +11,4 @@ if [ -e "$HOME/client.log" ];then
 	mv $HOME/client.log $HOME/log/client.$(date +%s).log  
 fi
 
-java -cp "$SCRIPTPATH/lib/*" -Xms2048m -Xmx2048m -XX:+PrintGCDetails -XX:+PrintGCDateStamps me.jasonbaik.loadtester.Client $ENV > >(tee $HOME/client.log) 2> >(tee $HOME/client.log >&2)
+java -cp "$SCRIPTPATH/lib/*" -Xms2048m -Xmx4086m -XX:+PrintGCDetails -XX:+PrintGCDateStamps me.jasonbaik.loadtester.Client $ENV > >(tee $HOME/client.log) 2> >(tee $HOME/client.log >&2)
