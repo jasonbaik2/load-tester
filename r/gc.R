@@ -1,8 +1,8 @@
-plotGC <- function(gcData, fullGcData, xlim, offset = 0){
+plotGC <- function(gcData, fullGcData, xlim, xMarks){
   ylim=c(0, 8500)
   yMarks=seq(from = 0, to = max(ylim), by = 1000)
 
-  x <- (gcData$time - offset)
+  x <- gcData$time
   
   plot(x, gcData$youngBefore/1024, col="red", xlim=xlim, ylim=ylim, ylab="", axes=FALSE, pch = 19, cex=0.5)
   par(new=T)
@@ -13,7 +13,7 @@ plotGC <- function(gcData, fullGcData, xlim, offset = 0){
   plot(x, gcData$heapAfter/1024, col="yellow", xlim=xlim, ylim=ylim, ylab="", axes=FALSE, pch = 19, cex=0.5)
   par(new=T)
   
-  x <- (fullGcData$time - offset)
+  x <- fullGcData$time
   
   plot(x, fullGcData$heapBefore/1024, col="black", xlim=xlim, ylim=ylim, ylab="", axes=FALSE, pch = 19, cex=0.5)
   par(new=T)

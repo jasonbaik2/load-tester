@@ -7,8 +7,8 @@
 
 	<util:list id="brokers" value-type="me.jasonbaik.loadtester.valueobject.Broker">
 		<bean class="me.jasonbaik.loadtester.valueobject.Broker">
-			<property name="hostname" value="172.31.61.1" />
-			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://172.31.61.1:1099/karaf-root" />
+			<property name="hostname" value="172.31.5.252" />
+			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://172.31.5.252:1099/karaf-root" />
 			<property name="username" value="admin" />
 			<property name="password" value="admin" />
 			<property name="connectors">
@@ -30,33 +30,33 @@
 		</bean>
 	</util:list>
 
-	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.RoundRobinMQTTPublisherConfig">
+	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.ConnectionIncreasingMQTTPublisherConfig">
 		<property name="brokers" ref="brokers" />
+		<property name="ssl" value="true" />
+		<property name="trace" value="true" />
 		<property name="keyStore" value="keystore/client.ks" />
 		<property name="keyStorePassword" value="password" />
 		<property name="trustStore" value="keystore/client.ks" />
 		<property name="trustStorePassword" value="password" />
-		<property name="duration" value="30" />
-		<property name="durationUnit" value="MINUTES" />
-		<property name="numConnections" value="5000" />
+		<property name="numConnections" value="200000" />
 		<property name="messagePoolSize" value="5000" />
 		<property name="messageByteLength" value="1024" />
 		<property name="qos" value="EXACTLY_ONCE" />
-		<property name="cleanSession" value="true" />
 		<property name="keepAliveIntervalMilli" value="0" />
-		<property name="connectionStepSize" value="1000" />
-		<property name="connectionStepIntervalMilli" value="10000" />
+		<property name="newConnectionInterval" value="200" />
+		<property name="newConnectionIntervalUnit" value="MILLISECONDS" />
+		<property name="connectionStepSize" value="2" />
 		<property name="topic" value="mqtt/attack" />
 	</bean>
 
-	<bean id="samplerConfig" class="me.jasonbaik.loadtester.sampler.impl.BurstSamplerConfig">
-		<property name="burstInterval" value="5" />
-		<property name="burstIntervalUnit" value="MINUTES" />
-		<property name="burstCount" value="5000" />
+	<bean id="samplerConfig" class="me.jasonbaik.loadtester.sampler.impl.CyclicSamplerConfig">
+		<property name="interval" value="80" />
+		<property name="intervalUnit" value="MILLISECONDS" />
 	</bean>
 
 	<bean id="receiverConfig" class="me.jasonbaik.loadtester.receiver.impl.SynchronousMQTTReplyingJMSConsumerConfig">
 		<property name="brokers" ref="brokers" />
+		<property name="ssl" value="true" />
 		<property name="queue" value="mqtt.attack.queue" />
 		<property name="keyStore" value="keystore/client.ks" />
 		<property name="keyStorePassword" value="password" />
@@ -67,7 +67,7 @@
 
 	<util:list id="scenarios" value-type="me.jasonbaik.loadtester.valueobject.Scenario">
 		<bean class="me.jasonbaik.loadtester.valueobject.Scenario">
-			<property name="name" value="n_1_publish_1_1_subscribe_burst" />
+			<property name="name" value="n_1_publish_1_1_subscribe_max_connections" />
 			<property name="brokers" ref="brokers" />
 			<property name="sends" ref="sends" />
 			<property name="receives" ref="receives" />

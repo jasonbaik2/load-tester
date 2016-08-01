@@ -88,10 +88,10 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 
 	@Override
 	public void destroy() throws JMSException {
-		consumer.close();
-		session.close();
+		logger.info("Closing JMS connection");
 		conn.close();
 
+		logger.info("Disconnecting MQTT connection");
 		mqttConn.disconnect();
 	}
 

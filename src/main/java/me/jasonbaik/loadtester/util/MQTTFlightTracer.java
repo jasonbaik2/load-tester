@@ -1,5 +1,6 @@
 package me.jasonbaik.loadtester.util;
 
+import java.io.IOException;
 import java.net.ProtocolException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,7 +38,15 @@ public class MQTTFlightTracer extends Tracer {
 			try {
 				PUBLISH pub = new PUBLISH().decode(frame);
 
-				String[] idPair = Payload.extractIdPair(pub.payload().toByteArray());
+				String[] idPair;
+
+				try {
+					idPair = Payload.extractIdPair(pub.payload());
+				} catch (IOException e) {
+					logger.error("Failed to parse PUBLISH payload", e);
+					return;
+				}
+
 				data.messageId = idPair[0] + "-" + idPair[1];
 
 				data.flightId = pub.messageId();

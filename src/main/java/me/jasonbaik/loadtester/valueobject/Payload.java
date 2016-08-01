@@ -1,8 +1,10 @@
 package me.jasonbaik.loadtester.valueobject;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Scanner;
 
+import org.fusesource.hawtbuf.Buffer;
 import org.fusesource.hawtbuf.ByteArrayInputStream;
 
 public class Payload {
@@ -51,11 +53,23 @@ public class Payload {
 	}
 
 	public static String[] extractIdPair(byte[] bytes) {
-		InputStream is = null;
-		Scanner sc = null;
-		is = new ByteArrayInputStream(bytes);
-		sc = new Scanner(is);
+		return extractIdPAir(new ByteArrayInputStream(bytes));
+	}
 
+	public static String[] extractIdPair(Buffer buffer) throws IOException {
+		InputStream is = new ByteArrayInputStream(buffer.data);
+
+		if (buffer.offset != 0) {
+			for (int i = 0; i < buffer.offset; i++) {
+				is.read();
+			}
+		}
+
+		return extractIdPAir(is);
+	}
+
+	private static String[] extractIdPAir(InputStream is) {
+		Scanner sc = new Scanner(is);
 		String[] idPair = new String[2];
 
 		try {

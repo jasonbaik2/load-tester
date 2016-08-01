@@ -3,6 +3,7 @@ plotLatencyDistribution <- function(latencies, main, by = -1){
   latenciesSeconds = latencies / 10^9
   maxLatency = max(latenciesSeconds)
   minLatency = min(latenciesSeconds)
+  middleLatency = (maxLatency - minLatency) / 2
   
   if (by == -1) {
     by = (ceiling(maxLatency) - floor(minLatency)) / 20
@@ -15,5 +16,8 @@ plotLatencyDistribution <- function(latencies, main, by = -1){
   h$density = h$counts / sum(h$counts) * 100
   plot(h, freq=FALSE, xlab = "Latency (Seconds)", xaxt = 'n', ylab = "%", main = main, ylim=c(0,100))
   text(h$mids, h$density, h$counts, adj = c(.5, -.5), col = "blue", cex=0.5)
+  text(x=middleLatency, y=100, labels=paste("Max:", round(max(latenciesSeconds), digits = 3), "s"), cex=1, adj=c(0,0.5))
+  text(x=middleLatency, y=90, labels=paste("99.9%:", round(quantile(latenciesSeconds, probs = c(0.999)), digits = 3)[1], "s"), cex=1, adj=c(0,0.5))
+  text(x=middleLatency, y=80, labels=paste("Mean:", round(mean(latenciesSeconds), digits = 3), "s"), cex=1, adj=c(0,0.5))
   axis(1, at=latencyMarks, labels=format(latencyMarks, scientific=FALSE))
 }

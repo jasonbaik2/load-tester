@@ -7,8 +7,8 @@
 
 	<util:list id="brokers" value-type="me.jasonbaik.loadtester.valueobject.Broker">
 		<bean class="me.jasonbaik.loadtester.valueobject.Broker">
-			<property name="hostname" value="172.31.61.1" />
-			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://172.31.61.1:1099/karaf-root" />
+			<property name="hostname" value="172.31.5.252" />
+			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://172.31.5.252:1099/karaf-root" />
 			<property name="username" value="admin" />
 			<property name="password" value="admin" />
 			<property name="connectors">
@@ -32,6 +32,7 @@
 
 	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.RoundRobinMQTTPublisherConfig">
 		<property name="brokers" ref="brokers" />
+		<property name="ssl" value="true" />
 		<property name="keyStore" value="keystore/client.ks" />
 		<property name="keyStorePassword" value="password" />
 		<property name="trustStore" value="keystore/client.ks" />
@@ -56,6 +57,7 @@
 
 	<bean id="receiverConfig" class="me.jasonbaik.loadtester.receiver.impl.SynchronousMQTTReplyingJMSConsumerConfig">
 		<property name="brokers" ref="brokers" />
+		<property name="ssl" value="true" />
 		<property name="queue" value="mqtt.attack.queue" />
 		<property name="keyStore" value="keystore/client.ks" />
 		<property name="keyStorePassword" value="password" />
@@ -66,7 +68,7 @@
 
 	<util:list id="scenarios" value-type="me.jasonbaik.loadtester.valueobject.Scenario">
 		<bean class="me.jasonbaik.loadtester.valueobject.Scenario">
-			<property name="name" value="n_1_publish_1_1_subscribe_cyclic" />
+			<property name="name" value="n_1_publish_1_1_subscribe_cyclic_ssl" />
 			<property name="brokers" ref="brokers" />
 			<property name="sends" ref="sends" />
 			<property name="receives" ref="receives" />

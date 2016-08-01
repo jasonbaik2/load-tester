@@ -98,14 +98,31 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 		}
 	}
 
+	private List<String> listTestContextFiles(File file, String parentPath, List<String> files) {
+		String path = (parentPath == null ? file.getName() : parentPath + "/" + file.getName());
+
+		if (file.isDirectory()) {
+			File[] children = file.listFiles();
+			Arrays.sort(children);
+
+			for (File c : children) {
+				listTestContextFiles(c, path, files);
+			}
+		} else {
+			files.add(path);
+		}
+
+		return files;
+	}
+
 	private List<Scenario<S1, S2, R1>> loadScenarios() throws IOException {
 		File testContextFile = null;
-		File[] knownTestContextFiles = new File("spring/test/broker").listFiles();
-		Arrays.sort(knownTestContextFiles);
 
 		while (true) {
-			for (int i = 0; i < knownTestContextFiles.length; i++) {
-				System.out.println("[" + i + "] " + knownTestContextFiles[i].getName());
+			List<String> testContextFiles = listTestContextFiles(new File("scenarios"), null, new ArrayList<String>());
+
+			for (int i = 0; i < testContextFiles.size(); i++) {
+				System.out.println("[" + i + "]\t" + testContextFiles.get(i));
 			}
 
 			String answer = readUserInput("Select one of the test contexts, or enter a new path to test context: ");
@@ -113,8 +130,8 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 			try {
 				int num = Integer.parseInt(answer);
 
-				if (0 <= num && num < knownTestContextFiles.length) {
-					testContextFile = knownTestContextFiles[num];
+				if (0 <= num && num < testContextFiles.size()) {
+					testContextFile = new File(testContextFiles.get(num));
 					break;
 				}
 			} catch (NumberFormatException e) {
