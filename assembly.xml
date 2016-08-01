@@ -21,6 +21,13 @@
 			</includes>
 		</fileSet>
 		<fileSet>
+			<directory>${basedir}/scenarios</directory>
+			<outputDirectory>/scenarios</outputDirectory>
+			<includes>
+				<include>**</include>
+			</includes>
+		</fileSet>
+		<fileSet>
 			<directory>${basedir}/spring</directory>
 			<outputDirectory>/spring</outputDirectory>
 			<includes>

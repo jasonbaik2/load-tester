@@ -36,6 +36,9 @@ public class ConnectionIncreasingMQTTPublisherConfig extends SenderConfig<Connec
 	private TimeUnit newConnectionIntervalUnit;
 	private int connectionStepSize;
 
+	private int duration;
+	private TimeUnit durationUnit;
+
 	@Override
 	public Class<ConnectionIncreasingMQTTPublisher> getSenderClass() {
 		return ConnectionIncreasingMQTTPublisher.class;
@@ -189,12 +192,28 @@ public class ConnectionIncreasingMQTTPublisherConfig extends SenderConfig<Connec
 		this.trace = trace;
 	}
 
+	public int getDuration() {
+		return duration;
+	}
+
+	public void setDuration(int duration) {
+		this.duration = duration;
+	}
+
+	public TimeUnit getDurationUnit() {
+		return durationUnit;
+	}
+
+	public void setDurationUnit(TimeUnit durationUnit) {
+		this.durationUnit = durationUnit;
+	}
+
 	@Override
 	public String toString() {
-		return "ConnectionIncreasingMQTTPublisherConfig [name=" + name + ", brokers=" + brokers + ", ssl=" + ssl + ", trace=" + trace + ", keyStore=" + keyStore + ", keyStorePassword="
-				+ keyStorePassword + ", trustStore=" + trustStore + ", trustStorePassword=" + trustStorePassword + ", messageByteLength=" + messageByteLength + ", messagePoolSize=" + messagePoolSize
-				+ ", qos=" + qos + ", topic=" + topic + ", cleanSession=" + cleanSession + ", keepAliveIntervalMilli=" + keepAliveIntervalMilli + ", numConnections=" + numConnections
-				+ ", newConnectionInterval=" + newConnectionInterval + ", newConnectionIntervalUnit=" + newConnectionIntervalUnit + ", connectionStepSize=" + connectionStepSize + "]";
+		return "ConnectionIncreasingMQTTPublisherConfig [name=" + name + ", brokers=" + brokers + ", ssl=" + ssl + ", trace=" + trace + ", keyStore=" + keyStore + ", trustStore=" + trustStore
+				+ ", messageByteLength=" + messageByteLength + ", messagePoolSize=" + messagePoolSize + ", qos=" + qos + ", topic=" + topic + ", cleanSession=" + cleanSession
+				+ ", keepAliveIntervalMilli=" + keepAliveIntervalMilli + ", numConnections=" + numConnections + ", newConnectionInterval=" + newConnectionInterval + ", newConnectionIntervalUnit="
+				+ newConnectionIntervalUnit + ", connectionStepSize=" + connectionStepSize + ", duration=" + duration + ", durationUnit=" + durationUnit + "]";
 	}
 
 }
