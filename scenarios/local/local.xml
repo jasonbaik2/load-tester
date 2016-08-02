@@ -30,9 +30,9 @@
 		</bean>
 	</util:list>
 
-	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.ConnectionIncreasingMQTTPublisherConfig">
+	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.FixedThroughputPerConnectionMQTTPublisherConfig">
 		<property name="brokers" ref="brokers" />
-		<property name="ssl" value="true" />
+		<property name="ssl" value="false" />
 		<property name="trace" value="true" />
 		<property name="keyStore" value="keystore/client.ks" />
 		<property name="keyStorePassword" value="password" />
@@ -49,6 +49,8 @@
 		<property name="topic" value="mqtt/attack" />
 		<property name="duration" value="10" />
 		<property name="durationUnit" value="SECONDS" />
+		<property name="messageInterval" value="1" />
+		<property name="messageIntervalUnit" value="SECONDS" />
 	</bean>
 
 	<bean id="samplerConfig" class="me.jasonbaik.loadtester.sampler.impl.CyclicSamplerConfig">
@@ -58,7 +60,7 @@
 
 	<bean id="receiverConfig" class="me.jasonbaik.loadtester.receiver.impl.SynchronousMQTTReplyingJMSConsumerConfig">
 		<property name="brokers" ref="brokers" />
-		<property name="ssl" value="true" />
+		<property name="ssl" value="false" />
 		<property name="queue" value="mqtt.attack.queue" />
 		<property name="keyStore" value="keystore/client.ks" />
 		<property name="keyStorePassword" value="password" />

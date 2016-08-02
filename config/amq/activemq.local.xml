@@ -21,6 +21,18 @@
 			</policyMap>
 		</destinationPolicy>
 
+		<destinationInterceptors>
+			<virtualDestinationInterceptor>
+				<virtualDestinations>
+					<compositeTopic name="mqtt.attack">
+						<forwardTo>
+							<queue physicalName="mqtt.attack.queue" />
+						</forwardTo>
+					</compositeTopic>
+				</virtualDestinations>
+			</virtualDestinationInterceptor>
+		</destinationInterceptors>
+
 		<managementContext>
 			<managementContext createConnector="false" />
 		</managementContext>
@@ -44,7 +56,8 @@
 		</systemUsage>
 
 		<transportConnectors>
-			<transportConnector name="openwire" uri="tcp://0.0.0.0:61615" />
+			<transportConnector name="openwire" uri="tcp://0.0.0.0:61616" />
+			<transportConnector name="mqtt" uri="mqtt+nio://0.0.0.0:1883" />
 		</transportConnectors>
 	</broker>
 

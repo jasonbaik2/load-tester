@@ -57,7 +57,10 @@ public class Client<S1, S2, R1> extends Node {
 		logger.info("Setting up a sender according to the test config: " + send.toString());
 
 		this.sender = SenderFactory.newInstance(send.getSenderConfig());
-		this.sampler = SamplerFactory.newInstance(send.getSamplerConfig());
+
+		if (send.getSamplerConfig() != null) {
+			this.sampler = SamplerFactory.newInstance(send.getSamplerConfig());
+		}
 
 		logger.info("Successfully set up the sender");
 	}

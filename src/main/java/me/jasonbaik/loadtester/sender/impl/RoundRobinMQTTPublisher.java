@@ -187,8 +187,8 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 			tracers.add(tracer);
 
 			CallbackConnection conn = client.callbackConnection();
-			conn.connect(new ConnectCallback(client, conn));
 			conn.listener(connectionListener);
+			conn.connect(new ConnectCallback(client, conn));
 
 			connections.add(conn);
 

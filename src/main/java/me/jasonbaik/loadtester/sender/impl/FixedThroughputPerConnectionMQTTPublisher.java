@@ -6,7 +6,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.Executors;
@@ -15,9 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import me.jasonbaik.loadtester.client.MQTTClientFactory;
-import me.jasonbaik.loadtester.sampler.PayloadIterator;
 import me.jasonbaik.loadtester.sampler.Sampler;
-import me.jasonbaik.loadtester.sampler.SamplerTask;
 import me.jasonbaik.loadtester.sender.Sender;
 import me.jasonbaik.loadtester.util.MQTTFlightTracer;
 import me.jasonbaik.loadtester.util.RandomXmlGenerator;
@@ -37,7 +34,7 @@ import org.fusesource.mqtt.client.ExtendedListener;
 import org.fusesource.mqtt.client.MQTT;
 import org.fusesource.mqtt.client.Topic;
 
-public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], ConnectionIncreasingMQTTPublisherConfig> {
+public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], FixedThroughputPerConnectionMQTTPublisherConfig> {
 
 	private static final Logger logger = LogManager.getLogger(FixedThroughputPerConnectionMQTTPublisher.class);
 
@@ -59,9 +56,11 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Co
 	private AtomicInteger numSubscriptionsEstablished = new AtomicInteger();
 
 	private ScheduledExecutorService connectionService;
-	private DelayQueue<DelayedMessage> outboundMessages;
+	private volatile long endTimeMillis = Long.MAX_VALUE;
 
-	private ArrayBlockingQueue<Pair<String, CallbackConnection>> activeConnections;
+	private List<Pair<String, CallbackConnection>> activeConnections;
+	private DelayQueue<DelayedMessage> outboundMessages = new DelayQueue<DelayedMessage>();
+	private long messageIntervalMillis;
 
 	private List<MQTTFlightTracer> tracers;
 	private List<Long> connectionEstablishmentTimes;
@@ -118,6 +117,9 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Co
 		public void onSuccess(byte[] value) {
 			logger.info(numSubscriptionsEstablished.incrementAndGet() + " subscriptions established so far");
 			activeConnections.add(conn);
+
+			// Queue the first outbound message for this connection now
+			outboundMessages.put(new DelayedMessage(conn, System.currentTimeMillis()));
 		}
 
 		@Override
@@ -199,7 +201,7 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Co
 
 	};
 
-	public FixedThroughputPerConnectionMQTTPublisher(ConnectionIncreasingMQTTPublisherConfig config) {
+	public FixedThroughputPerConnectionMQTTPublisher(FixedThroughputPerConnectionMQTTPublisherConfig config) {
 		super(config);
 	}
 
@@ -213,38 +215,72 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Co
 			payloads.add(RandomXmlGenerator.generate(getConfig().getMessageByteLength()));
 		}
 
-		activeConnections = new ArrayBlockingQueue<Pair<String, CallbackConnection>>(getConfig().getNumConnections());
+		activeConnections = Collections.synchronizedList(new ArrayList<Pair<String, CallbackConnection>>(getConfig().getNumConnections()));
 		connectionEstablishmentTimes = Collections.synchronizedList(new ArrayList<Long>(getConfig().getNumConnections()));
 
 		if (getConfig().isTrace()) {
 			tracers = Collections.synchronizedList(new ArrayList<MQTTFlightTracer>(getConfig().getNumConnections()));
 		}
+
+		messageIntervalMillis = TimeUnit.MILLISECONDS.convert(getConfig().getMessageInterval(), getConfig().getMessageIntervalUnit());
 	}
 
-	class DelayedMessage implements Delayed {
+	private static class DelayedMessage implements Delayed {
+
+		Pair<String, CallbackConnection> conn;
+		long publishTimeMillis;
+
+		DelayedMessage(Pair<String, CallbackConnection> conn, long publishTimeMillis) {
+			super();
+			this.conn = conn;
+			this.publishTimeMillis = publishTimeMillis;
+		}
 
 		@Override
 		public int compareTo(Delayed o) {
-			// TODO Auto-generated method stub
-			return 0;
+			if (publishTimeMillis < ((DelayedMessage) o).publishTimeMillis) {
+				return -1;
+			} else if (publishTimeMillis == ((DelayedMessage) o).publishTimeMillis) {
+				return 0;
+			}
+			return 1;
 		}
 
 		@Override
 		public long getDelay(TimeUnit unit) {
-			// TODO Auto-generated method stub
-			return 0;
+			return publishTimeMillis - System.currentTimeMillis();
 		}
 
 	}
 
 	@Override
 	public void send(Sampler<byte[], ?> sampler) throws Exception {
+		send();
+	}
+
+	private void send() throws InterruptedException {
 		// Start a thread that periodically creates more connections with the broker(s)
 		connectionService = Executors.newSingleThreadScheduledExecutor();
 		connectionService.scheduleAtFixedRate(new Runnable() {
 
 			@Override
 			public void run() {
+				if (numConnectionsEstablished.get() >= getConfig().getNumConnections()) {
+					synchronized (connectionService) {
+						if (connectionService.isShutdown()) {
+							return;
+						}
+
+						connectionService.shutdown();
+
+						// All connections established. Set the end time at which the sender should terminate
+						endTimeMillis = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(getConfig().getDuration(), getConfig().getDurationUnit());
+						logger.info("All " + getConfig().getNumConnections() + " connections have been established. The sender will publish the messages for an additional "
+								+ getConfig().getDuration() + " " + getConfig().getDurationUnit() + ", then terminate");
+						return;
+					}
+				}
+
 				for (int i = 0; i < getConfig().getConnectionStepSize(); i++) {
 					MQTT client = new MQTT();
 					Broker broker = getNextBroker();
@@ -274,55 +310,39 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Co
 					}
 
 					CallbackConnection conn = client.callbackConnection();
-					conn.connect(new ConnectCallback(client, conn));
 					conn.listener(connectionListener);
+					conn.connect(new ConnectCallback(client, conn));
 				}
 			}
 
 		}, 0, getConfig().getNewConnectionInterval(), getConfig().getNewConnectionIntervalUnit());
 
-		// Publish messages at a fixed rate using the active connections in a round-robin fashion
-		// Stop when the desired number of connections is reached, or the sampler duration expires
-		sampler.forEach(new SamplerTask<byte[]>() {
+		int index = 0;
 
-			@Override
-			public void run(int index, byte[] payload) throws Exception {
-				Pair<String, CallbackConnection> conn = activeConnections.take();
+		// Stop when the duration expires
+		while (endTimeMillis > System.currentTimeMillis()) {
+			DelayedMessage msg = outboundMessages.poll(1, TimeUnit.SECONDS);
 
-				if (logger.isDebugEnabled()) {
-					logger.debug("Publishing a message using the connection " + conn.key);
-				}
-
-				conn.value.publish(getConfig().getTopic(), Payload.toBytes(conn.key, index, payload), getConfig().getQos(), false, publishCallback);
-				publishedCount.incrementAndGet();
-
-				// Put the connection back into the tail of the blocking queue so it can be reused
-				activeConnections.put(conn);
+			if (msg == null) {
+				continue;
 			}
 
-		}, new PayloadIterator<byte[]>() {
-
-			@Override
-			public void remove() {
-				throw new UnsupportedOperationException();
+			if (logger.isDebugEnabled()) {
+				logger.debug("Publishing a message using the connection " + msg.conn.key);
 			}
 
-			@Override
-			public byte[] next() {
-				return payloads.get(publishedCount.get() % payloads.size());
-			}
+			byte[] payload = payloads.get(publishedCount.get() % payloads.size());
 
-			@Override
-			public boolean hasNext() {
-				if (numConnectionsEstablished.get() < getConfig().getNumConnections()) {
-					return true;
-				}
-				return false;
-			}
+			msg.conn.value.publish(getConfig().getTopic(), Payload.toBytes(msg.conn.key, index++, payload), getConfig().getQos(), false, publishCallback);
+			publishedCount.incrementAndGet();
 
-		});
+			// Put the next message for this connection
+			outboundMessages.put(new DelayedMessage(msg.conn, System.currentTimeMillis() + messageIntervalMillis));
+		}
 
 		pubDone = true;
+		logger.info("All messages have been published");
+
 		connectionService.shutdown();
 	}
 
@@ -341,8 +361,10 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Co
 			connectionService.awaitTermination(5, TimeUnit.SECONDS);
 		}
 
-		for (Pair<String, CallbackConnection> conn : activeConnections) {
-			conn.value.disconnect(null);
+		synchronized (activeConnections) {
+			for (Pair<String, CallbackConnection> conn : activeConnections) {
+				conn.value.disconnect(null);
+			}
 		}
 
 		tracers.clear();

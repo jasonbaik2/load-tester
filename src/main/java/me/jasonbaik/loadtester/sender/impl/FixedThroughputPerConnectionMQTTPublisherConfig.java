@@ -8,7 +8,7 @@ import me.jasonbaik.loadtester.valueobject.Broker;
 
 import org.fusesource.mqtt.client.QoS;
 
-public class FixedThroughputPerConnectionMQTTPublisherConfig extends SenderConfig<ConnectionIncreasingMQTTPublisher> {
+public class FixedThroughputPerConnectionMQTTPublisherConfig extends SenderConfig<FixedThroughputPerConnectionMQTTPublisher> {
 
 	private static final long serialVersionUID = 1L;
 
@@ -36,9 +36,15 @@ public class FixedThroughputPerConnectionMQTTPublisherConfig extends SenderConfi
 	private TimeUnit newConnectionIntervalUnit;
 	private int connectionStepSize;
 
+	private int duration;
+	private TimeUnit durationUnit;
+
+	private long messageInterval;
+	private TimeUnit messageIntervalUnit;
+
 	@Override
-	public Class<ConnectionIncreasingMQTTPublisher> getSenderClass() {
-		return ConnectionIncreasingMQTTPublisher.class;
+	public Class<FixedThroughputPerConnectionMQTTPublisher> getSenderClass() {
+		return FixedThroughputPerConnectionMQTTPublisher.class;
 	}
 
 	public String getName() {
@@ -189,12 +195,45 @@ public class FixedThroughputPerConnectionMQTTPublisherConfig extends SenderConfi
 		this.trace = trace;
 	}
 
+	public int getDuration() {
+		return duration;
+	}
+
+	public void setDuration(int duration) {
+		this.duration = duration;
+	}
+
+	public TimeUnit getDurationUnit() {
+		return durationUnit;
+	}
+
+	public void setDurationUnit(TimeUnit durationUnit) {
+		this.durationUnit = durationUnit;
+	}
+
+	public long getMessageInterval() {
+		return messageInterval;
+	}
+
+	public void setMessageInterval(long messageInterval) {
+		this.messageInterval = messageInterval;
+	}
+
+	public TimeUnit getMessageIntervalUnit() {
+		return messageIntervalUnit;
+	}
+
+	public void setMessageIntervalUnit(TimeUnit messageIntervalUnit) {
+		this.messageIntervalUnit = messageIntervalUnit;
+	}
+
 	@Override
 	public String toString() {
-		return "ConnectionIncreasingMQTTPublisherConfig [name=" + name + ", brokers=" + brokers + ", ssl=" + ssl + ", trace=" + trace + ", keyStore=" + keyStore + ", keyStorePassword="
+		return "FixedThroughputPerConnectionMQTTPublisherConfig [name=" + name + ", brokers=" + brokers + ", ssl=" + ssl + ", trace=" + trace + ", keyStore=" + keyStore + ", keyStorePassword="
 				+ keyStorePassword + ", trustStore=" + trustStore + ", trustStorePassword=" + trustStorePassword + ", messageByteLength=" + messageByteLength + ", messagePoolSize=" + messagePoolSize
 				+ ", qos=" + qos + ", topic=" + topic + ", cleanSession=" + cleanSession + ", keepAliveIntervalMilli=" + keepAliveIntervalMilli + ", numConnections=" + numConnections
-				+ ", newConnectionInterval=" + newConnectionInterval + ", newConnectionIntervalUnit=" + newConnectionIntervalUnit + ", connectionStepSize=" + connectionStepSize + "]";
+				+ ", newConnectionInterval=" + newConnectionInterval + ", newConnectionIntervalUnit=" + newConnectionIntervalUnit + ", connectionStepSize=" + connectionStepSize + ", duration="
+				+ duration + ", durationUnit=" + durationUnit + ", messageInterval=" + messageInterval + ", messageIntervalUnit=" + messageIntervalUnit + "]";
 	}
 
 }

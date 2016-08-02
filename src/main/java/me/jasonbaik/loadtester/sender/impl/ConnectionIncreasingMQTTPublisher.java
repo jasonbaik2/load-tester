@@ -272,15 +272,15 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 					}
 
 					CallbackConnection conn = client.callbackConnection();
-					conn.connect(new ConnectCallback(client, conn));
 					conn.listener(connectionListener);
+					conn.connect(new ConnectCallback(client, conn));
 				}
 			}
 
 		}, 0, getConfig().getNewConnectionInterval(), getConfig().getNewConnectionIntervalUnit());
 
 		// Publish messages at a fixed rate using the active connections in a round-robin fashion
-		// Stop when the desired number of connections is reached, or the sampler duration expires
+		// Stop when the sampler duration expires
 		sampler.forEach(new SamplerTask<byte[]>() {
 
 			@Override
