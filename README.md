@@ -1,6 +1,6 @@
 # load-tester
 
-This simple load tester was created to test Red Hat A-MQ 6.2.1 as an MQTT broker, and to produce the test results shown on https://jasonbaik.me/blog/entry/20/ActiveMQ-as-an-MQTT-Broker.
+This simple load tester was created to test Red Hat A-MQ 6.2.1 as an MQTT broker, and to produce the test results shown on https://jasonbaik.me/blog/2016/6/ActiveMQ-as-an-MQTT-Broker.
 
 ## How To Run a Test
 
@@ -39,8 +39,4 @@ When the required # of loader clients are online, the controller will begin orch
 
 ## Other Setup
 
-<<<<<<< HEAD
-If you're simulating a large # of connections, make sure you modify the ulimits, and TCP/IP-, and NIC-related kernel parameters appropriately, so you don't run into issues like OOM, or SYN flood. Also, some of the test scenarios included by default simulate SSL connections using the TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA cipher suite. This is supported Java 1.7 and above, so keep that in mind.
-=======
 If you're simulating a large # of connections, make sure you modify the ulimits, and TCP/IP-, and NIC-related kernel parameters appropriately, so you don't run into issues like OOM, or SYN flood. Also, some of the test scenario included by default simulate SSL connections using the TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA cipher suite. This is supported Java 1.7 and above, so keep that in mind.
->>>>>>> branch 'master' of https://github.com/jasonbaik2/load-tester.git
