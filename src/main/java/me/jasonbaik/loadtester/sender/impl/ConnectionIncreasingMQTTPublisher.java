@@ -3,6 +3,7 @@ package me.jasonbaik.loadtester.sender.impl;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -363,8 +364,8 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 		StringBuilder sb = new StringBuilder("Connection_Establishment_Times\n");
 
 		synchronized (connectionEstablishmentTimes) {
-			for (Long l : connectionEstablishmentTimes) {
-				sb.append(Long.toString(l)).append("\n");
+			for (Iterator<Long> iter = connectionEstablishmentTimes.iterator(); iter.hasNext();) {
+				sb.append(Long.toString(iter.next())).append("\n");
 			}
 		}
 

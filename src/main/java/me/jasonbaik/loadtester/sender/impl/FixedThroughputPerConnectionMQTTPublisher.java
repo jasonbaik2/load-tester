@@ -3,6 +3,7 @@ package me.jasonbaik.loadtester.sender.impl;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -47,14 +48,15 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 	private AtomicInteger failureCount = new AtomicInteger(0);
 	private AtomicInteger repliedCount = new AtomicInteger(0);
 
-	private volatile boolean pubDone;
-
-	private int brokerIndex = 0;
+	private volatile String state;
 
 	private volatile int numConnectionsInitiated;
 	private AtomicInteger numConnectionsEstablished = new AtomicInteger();
 	private AtomicInteger numSubscriptionsEstablished = new AtomicInteger();
 
+	private int brokerIndex = 0;
+
+	private ScheduledExecutorService statLoggingService;
 	private ScheduledExecutorService connectionService;
 	private volatile long endTimeMillis = Long.MAX_VALUE;
 
@@ -90,9 +92,6 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 		@Override
 		public void onSuccess(Void value) {
 			int connectionNum = numConnectionsEstablished.incrementAndGet();
-
-			logger.info(connectionNum + " / " + numConnectionsInitiated + " connections established so far");
-
 			connectionEstablishmentTimes.add(System.currentTimeMillis());
 			conn.subscribe(new Topic[] { new Topic(client.getClientId().toString(), getConfig().getQos()) }, new SubscribeCallback(new Pair<String, CallbackConnection>(uuid + "-" + connectionNum,
 					conn)));
@@ -115,7 +114,7 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 
 		@Override
 		public void onSuccess(byte[] value) {
-			logger.info(numSubscriptionsEstablished.incrementAndGet() + " subscriptions established so far");
+			numSubscriptionsEstablished.incrementAndGet();
 			activeConnections.add(conn);
 
 			// Queue the first outbound message for this connection now
@@ -166,37 +165,7 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 				logger.debug("Received a reply on connection=" + topic + " for message id=" + Payload.extractMessageId(body.toByteArray()));
 			}
 
-			logger.info("Replied: " + repliedCount.incrementAndGet() + " / " + publishedCount.get() + (pubDone ? " (Publish Done)" : ""));
-		}
-
-	};
-
-	private Callback<Void> publishCallback = new Callback<Void>() {
-
-		@Override
-		public void onSuccess(Void value) {
-			printCounts(true);
-		}
-
-		@Override
-		public void onFailure(Throwable value) {
-			logger.error(value);
-			printCounts(false);
-		}
-
-		private void printCounts(boolean success) {
-			int sCount;
-			int fCount;
-
-			if (success) {
-				sCount = successCount.incrementAndGet();
-				fCount = failureCount.get();
-			} else {
-				sCount = successCount.get();
-				fCount = failureCount.incrementAndGet();
-			}
-
-			logger.info("Published: " + publishedCount.get() + ", " + "Success: " + sCount + ", Failed: " + fCount);
+			repliedCount.incrementAndGet();
 		}
 
 	};
@@ -253,12 +222,43 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 
 	}
 
+	private void printStats() {
+		System.out.print(state);
+		System.out.print("\t\tPublished: ");
+		System.out.print(publishedCount);
+		System.out.print(", Replied: ");
+		System.out.print(repliedCount);
+		System.out.print(", Success: ");
+		System.out.print(successCount);
+		System.out.print(", Failed: ");
+		System.out.print(failureCount);
+		System.out.print(", Connections: ");
+		System.out.print(numConnectionsEstablished);
+		System.out.print("/");
+		System.out.print(numConnectionsInitiated);
+		System.out.print(", Subscriptions: ");
+		System.out.print(numSubscriptionsEstablished);
+		System.out.print("\n");
+	}
+
 	@Override
 	public void send(Sampler<byte[], ?> sampler) throws Exception {
 		send();
 	}
 
 	private void send() throws InterruptedException {
+		// Log stats periodically
+		statLoggingService = Executors.newSingleThreadScheduledExecutor();
+		statLoggingService.scheduleAtFixedRate(new Runnable() {
+			@Override
+			public void run() {
+				printStats();
+			}
+
+		}, 0, 2, TimeUnit.SECONDS);
+
+		state = "Connecting and Publishing";
+
 		// Start a thread that periodically creates more connections with the broker(s)
 		connectionService = Executors.newSingleThreadScheduledExecutor();
 		connectionService.scheduleAtFixedRate(new Runnable() {
@@ -277,6 +277,7 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 						endTimeMillis = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(getConfig().getDuration(), getConfig().getDurationUnit());
 						logger.info("All " + getConfig().getNumConnections() + " connections have been established. The sender will publish the messages for an additional "
 								+ getConfig().getDuration() + " " + getConfig().getDurationUnit() + ", then terminate");
+						state = "Publishing";
 						return;
 					}
 				}
@@ -333,14 +334,14 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 
 			byte[] payload = payloads.get(publishedCount.get() % payloads.size());
 
-			msg.conn.value.publish(getConfig().getTopic(), Payload.toBytes(msg.conn.key, index++, payload), getConfig().getQos(), false, publishCallback);
+			msg.conn.value.publish(getConfig().getTopic(), Payload.toBytes(msg.conn.key, index++, payload), getConfig().getQos(), false, null);
 			publishedCount.incrementAndGet();
 
 			// Put the next message for this connection
 			outboundMessages.put(new DelayedMessage(msg.conn, System.currentTimeMillis() + messageIntervalMillis));
 		}
 
-		pubDone = true;
+		state = "Publish Done";
 		logger.info("All messages have been published");
 
 		connectionService.shutdown();
@@ -352,22 +353,30 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 
 	@Override
 	public void destroy() throws Exception {
-		connectionService.shutdown();
-
-		while (true) {
-			if (connectionService.isShutdown()) {
-				break;
-			}
-			connectionService.awaitTermination(5, TimeUnit.SECONDS);
+		if (statLoggingService != null) {
+			statLoggingService.shutdown();
 		}
 
-		synchronized (activeConnections) {
-			for (Pair<String, CallbackConnection> conn : activeConnections) {
-				conn.value.disconnect(null);
+		if (connectionService != null) {
+			connectionService.shutdown();
+
+			while (true) {
+				if (connectionService.isShutdown()) {
+					break;
+				}
+				connectionService.awaitTermination(5, TimeUnit.SECONDS);
+			}
+
+			synchronized (activeConnections) {
+				for (Pair<String, CallbackConnection> conn : activeConnections) {
+					conn.value.disconnect(null);
+				}
 			}
 		}
 
-		tracers.clear();
+		if (tracers != null) {
+			tracers.clear();
+		}
 	}
 
 	@Override
@@ -387,8 +396,8 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 		StringBuilder sb = new StringBuilder("Connection_Establishment_Times\n");
 
 		synchronized (connectionEstablishmentTimes) {
-			for (Long l : connectionEstablishmentTimes) {
-				sb.append(Long.toString(l)).append("\n");
+			for (Iterator<Long> iter = connectionEstablishmentTimes.iterator(); iter.hasNext();) {
+				sb.append(Long.toString(iter.next())).append("\n");
 			}
 		}
 
