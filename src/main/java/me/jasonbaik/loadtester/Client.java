@@ -17,10 +17,6 @@ import javax.jms.MessageListener;
 import javax.jms.Queue;
 import javax.xml.bind.JAXBException;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
-
 import me.jasonbaik.loadtester.constant.StringConstants;
 import me.jasonbaik.loadtester.receiver.Receiver;
 import me.jasonbaik.loadtester.receiver.ReceiverFactory;
@@ -31,6 +27,10 @@ import me.jasonbaik.loadtester.sender.SenderFactory;
 import me.jasonbaik.loadtester.valueobject.Receive;
 import me.jasonbaik.loadtester.valueobject.ReportData;
 import me.jasonbaik.loadtester.valueobject.Send;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 public class Client<S1, S2, R1> extends Node {
 
@@ -112,7 +112,7 @@ public class Client<S1, S2, R1> extends Node {
 		}
 
 		if (this.getClientLog() != null && this.getClientLog().length() > 0) {
-			// FIXME What if the client log file is modified while being read? The length will change and IOB exception will occur
+			// FIXME What if the client log file is modified while being read?
 			try {
 				File file = new File(this.getClientLog());
 

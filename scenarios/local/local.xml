@@ -38,7 +38,7 @@
 		<property name="keyStorePassword" value="password" />
 		<property name="trustStore" value="keystore/client.ks" />
 		<property name="trustStorePassword" value="password" />
-		<property name="numConnections" value="1000" />
+		<property name="numConnections" value="100" />
 		<property name="messagePoolSize" value="5000" />
 		<property name="messageByteLength" value="1024" />
 		<property name="qos" value="EXACTLY_ONCE" />
@@ -47,6 +47,8 @@
 		<property name="newConnectionIntervalUnit" value="SECONDS" />
 		<property name="connectionStepSize" value="10" />
 		<property name="topic" value="mqtt/attack" />
+		<property name="duration" value="10" />
+		<property name="durationUnit" value="SECONDS" />
 	</bean>
 
 	<bean id="samplerConfig" class="me.jasonbaik.loadtester.sampler.impl.CyclicSamplerConfig">

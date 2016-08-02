@@ -57,6 +57,7 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 	private AtomicInteger numSubscriptionsEstablished = new AtomicInteger();
 
 	private ScheduledExecutorService connectionService;
+	private volatile long endTimeMillis = Long.MAX_VALUE;
 
 	private ArrayBlockingQueue<Pair<String, CallbackConnection>> activeConnections;
 
@@ -226,6 +227,22 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 
 			@Override
 			public void run() {
+				if (numConnectionsEstablished.get() >= getConfig().getNumConnections()) {
+					synchronized (connectionService) {
+						if (connectionService.isShutdown()) {
+							return;
+						}
+
+						connectionService.shutdown();
+
+						// All connections established. Set the end time at which the sender should terminate
+						endTimeMillis = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(getConfig().getDuration(), getConfig().getDurationUnit());
+						logger.info("All " + getConfig().getNumConnections() + " connections have been established. The sender will publish the messages for an additional "
+								+ getConfig().getDuration() + " " + getConfig().getDurationUnit() + ", then terminate");
+						return;
+					}
+				}
+
 				for (int i = 0; i < getConfig().getConnectionStepSize(); i++) {
 					MQTT client = new MQTT();
 					Broker broker = getNextBroker();
@@ -295,10 +312,10 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 
 			@Override
 			public boolean hasNext() {
-				if (numConnectionsEstablished.get() < getConfig().getNumConnections()) {
-					return true;
+				if (endTimeMillis < System.currentTimeMillis()) {
+					return false;
 				}
-				return false;
+				return true;
 			}
 
 		});
