@@ -112,6 +112,7 @@ public class Client<S1, S2, R1> extends Node {
 		}
 
 		if (this.getClientLog() != null && this.getClientLog().length() > 0) {
+			// FIXME What if the client log file is modified while being read?
 			try {
 				File file = new File(this.getClientLog());
 

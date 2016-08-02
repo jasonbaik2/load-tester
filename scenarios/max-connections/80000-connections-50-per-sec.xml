@@ -8,7 +8,7 @@
 	<import resource="max-connections-base.xml" />
 
 	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.ConnectionIncreasingMQTTPublisherConfig" parent="senderConfigBase">
-		<property name="numConnections" value="80000" />
+		<property name="numConnections" value="20000" />
 	</bean>
 
 	<bean id="samplerConfig" class="me.jasonbaik.loadtester.sampler.impl.CyclicSamplerConfig">

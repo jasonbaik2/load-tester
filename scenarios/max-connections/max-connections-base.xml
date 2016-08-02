@@ -32,7 +32,7 @@
 
 	<bean id="senderConfigBase" class="me.jasonbaik.loadtester.sender.impl.ConnectionIncreasingMQTTPublisherConfig" abstract="true">
 		<property name="brokers" ref="brokers" />
-		<property name="ssl" value="true" />
+		<property name="ssl" value="false" />
 		<property name="trace" value="true" />
 		<property name="keyStore" value="keystore/client.ks" />
 		<property name="keyStorePassword" value="password" />
@@ -53,7 +53,7 @@
 
 	<bean id="receiverConfig" class="me.jasonbaik.loadtester.receiver.impl.SynchronousMQTTReplyingJMSConsumerConfig">
 		<property name="brokers" ref="brokers" />
-		<property name="ssl" value="true" />
+		<property name="ssl" value="false" />
 		<property name="queue" value="mqtt.attack.queue" />
 		<property name="keyStore" value="keystore/client.ks" />
 		<property name="keyStorePassword" value="password" />

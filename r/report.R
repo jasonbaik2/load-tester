@@ -238,15 +238,19 @@ report <- function (reportDir, reportFile, sends, receives, gcFiles, fullGcFiles
 # reportDir = "D:/report/n_1_publish_1_1_subscribe_random_networked_2016_07_27_01_05_56"
 # setupDuration = 65
 
-# Max Connections
-reportDir = "D:/report/n_1_publish_1_1_subscribe_max_connections_2016_07_28_14_51_38"
+# # Max Connections
+# reportDir = "D:/report/n_1_publish_1_1_subscribe_max_connections_2016_07_28_14_51_38"
+
+# Max connections 40000-50
+reportDir = "D:/report/n_1_publish_1_1_subscribe_max_connections_2016_08_01_23_41_51"
+startTime = "2016-08-01 22:57:39,676"
 
 setwd(dir = "C:/Users/HCC5fkv/git_repo/load-tester-github/load-tester/r")
 
 sends = c("send1", "send2", "send3", "send4")
-receives = c("receive1")
+receives = c("receive1","receive2","receive3","receive4")
 gcFiles = c("spoke1_gc.log")#,"spoke2_gc.log","spoke3_gc.log","spoke4_gc.log")
 fullGcFiles = c("spoke1_full_gc.log")#,"spoke2_full_gc.log","spoke3_full_gc.log","spoke4_full_gc.log")
-startTimeEpochMillis = as.numeric(as.POSIXlt("2016-07-28 14:12:33,818")) * 10^3
+startTimeEpochMillis = as.numeric(as.POSIXlt(startTime)) * 10^3
 
 report(reportDir, paste(sep="/", reportDir, "report.pdf"), sends, receives, gcFiles, fullGcFiles, startTimeEpochMillis)
