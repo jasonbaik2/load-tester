@@ -49,14 +49,15 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 	private AtomicInteger failureCount = new AtomicInteger(0);
 	private AtomicInteger repliedCount = new AtomicInteger(0);
 
-	private volatile boolean pubDone;
-
-	private int brokerIndex = 0;
+	private volatile String state = "Conn/Pub/Sub";
 
 	private volatile int numConnectionsInitiated;
 	private AtomicInteger numConnectionsEstablished = new AtomicInteger();
 	private AtomicInteger numSubscriptionsEstablished = new AtomicInteger();
 
+	private int brokerIndex = 0;
+
+	private ScheduledExecutorService statLoggingService;
 	private ScheduledExecutorService connectionService;
 	private volatile long endTimeMillis = Long.MAX_VALUE;
 
@@ -90,9 +91,6 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 		@Override
 		public void onSuccess(Void value) {
 			int connectionNum = numConnectionsEstablished.incrementAndGet();
-
-			logger.info(connectionNum + " / " + numConnectionsInitiated + " connections established so far");
-
 			connectionEstablishmentTimes.add(System.currentTimeMillis());
 			conn.subscribe(new Topic[] { new Topic(client.getClientId().toString(), getConfig().getQos()) }, new SubscribeCallback(new Pair<String, CallbackConnection>(uuid + "-" + connectionNum,
 					conn)));
@@ -115,7 +113,7 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 
 		@Override
 		public void onSuccess(byte[] value) {
-			logger.info(numSubscriptionsEstablished.incrementAndGet() + " subscriptions established so far");
+			numSubscriptionsEstablished.incrementAndGet();
 			activeConnections.add(conn);
 		}
 
@@ -163,7 +161,7 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 				logger.debug("Received a reply on connection=" + topic + " for message id=" + Payload.extractMessageId(body.toByteArray()));
 			}
 
-			logger.info("Replied: " + repliedCount.incrementAndGet() + " / " + publishedCount.get() + (pubDone ? " (Publish Done)" : ""));
+			repliedCount.incrementAndGet();
 		}
 
 	};
@@ -172,28 +170,12 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 
 		@Override
 		public void onSuccess(Void value) {
-			printCounts(true);
+			successCount.incrementAndGet();
 		}
 
 		@Override
 		public void onFailure(Throwable value) {
-			logger.error(value);
-			printCounts(false);
-		}
-
-		private void printCounts(boolean success) {
-			int sCount;
-			int fCount;
-
-			if (success) {
-				sCount = successCount.incrementAndGet();
-				fCount = failureCount.get();
-			} else {
-				sCount = successCount.get();
-				fCount = failureCount.incrementAndGet();
-			}
-
-			logger.info("Published: " + publishedCount.get() + ", " + "Success: " + sCount + ", Failed: " + fCount);
+			failureCount.incrementAndGet();
 		}
 
 	};
@@ -240,6 +222,7 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 						endTimeMillis = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(getConfig().getDuration(), getConfig().getDurationUnit());
 						logger.info("All " + getConfig().getNumConnections() + " connections have been established. The sender will publish the messages for an additional "
 								+ getConfig().getDuration() + " " + getConfig().getDurationUnit() + ", then terminate");
+						state = "Pub/Sub";
 						return;
 					}
 				}
@@ -321,7 +304,8 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 
 		});
 
-		pubDone = true;
+		state = "Sub";
+		logger.info("All messages have been published");
 		connectionService.shutdown();
 	}
 
@@ -331,20 +315,30 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 
 	@Override
 	public void destroy() throws Exception {
-		connectionService.shutdown();
+		if (statLoggingService != null) {
+			statLoggingService.shutdown();
+		}
 
-		while (true) {
-			if (connectionService.isShutdown()) {
-				break;
+		if (connectionService != null) {
+			connectionService.shutdown();
+
+			while (true) {
+				if (connectionService.isShutdown()) {
+					break;
+				}
+				connectionService.awaitTermination(5, TimeUnit.SECONDS);
 			}
-			connectionService.awaitTermination(5, TimeUnit.SECONDS);
+
+			synchronized (activeConnections) {
+				for (Pair<String, CallbackConnection> conn : activeConnections) {
+					conn.value.disconnect(null);
+				}
+			}
 		}
 
-		for (Pair<String, CallbackConnection> conn : activeConnections) {
-			conn.value.disconnect(null);
+		if (tracers != null) {
+			tracers.clear();
 		}
-
-		tracers.clear();
 	}
 
 	@Override
@@ -372,6 +366,25 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 		reportDatas.add(new ReportData("Connection_Establishment_Times.csv", sb.toString().getBytes()));
 
 		return reportDatas;
+	}
+
+	public void log() {
+		System.out.print(state);
+		System.out.print("\tPublished: ");
+		System.out.print(publishedCount);
+		System.out.print(", Replied: ");
+		System.out.print(repliedCount);
+		System.out.print(", Success: ");
+		System.out.print(successCount);
+		System.out.print(", Failed: ");
+		System.out.print(failureCount);
+		System.out.print(", Connections: ");
+		System.out.print(numConnectionsEstablished);
+		System.out.print("/");
+		System.out.print(numConnectionsInitiated);
+		System.out.print(", Subscriptions: ");
+		System.out.print(numSubscriptionsEstablished);
+		System.out.print("\n");
 	}
 
 }

@@ -1,10 +1,11 @@
 package me.jasonbaik.loadtester.sender;
 
+import me.jasonbaik.loadtester.reporter.Loggable;
 import me.jasonbaik.loadtester.reporter.Reportable;
 import me.jasonbaik.loadtester.sampler.Sampler;
 import me.jasonbaik.loadtester.valueobject.ReportData;
 
-public abstract class Sender<T1, T2 extends SenderConfig<?>> implements Reportable<ReportData> {
+public abstract class Sender<T1, T2 extends SenderConfig<?>> implements Reportable<ReportData>, Loggable {
 
 	private T2 config;
 

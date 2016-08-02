@@ -1,9 +1,10 @@
 package me.jasonbaik.loadtester.receiver;
 
+import me.jasonbaik.loadtester.reporter.Loggable;
 import me.jasonbaik.loadtester.reporter.Reportable;
 import me.jasonbaik.loadtester.valueobject.ReportData;
 
-public abstract class Receiver<T extends ReceiverConfig<?>> implements Reportable<ReportData> {
+public abstract class Receiver<T extends ReceiverConfig<?>> implements Reportable<ReportData>, Loggable {
 
 	private T config;
 

@@ -48,7 +48,7 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 	private AtomicInteger failureCount = new AtomicInteger(0);
 	private AtomicInteger repliedCount = new AtomicInteger(0);
 
-	private volatile String state;
+	private volatile String state = "Conn/Pub/Sub";
 
 	private volatile int numConnectionsInitiated;
 	private AtomicInteger numConnectionsEstablished = new AtomicInteger();
@@ -170,6 +170,20 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 
 	};
 
+	private Callback<Void> publishCallback = new Callback<Void>() {
+
+		@Override
+		public void onSuccess(Void value) {
+			successCount.incrementAndGet();
+		}
+
+		@Override
+		public void onFailure(Throwable value) {
+			failureCount.incrementAndGet();
+		}
+
+	};
+
 	public FixedThroughputPerConnectionMQTTPublisher(FixedThroughputPerConnectionMQTTPublisherConfig config) {
 		super(config);
 	}
@@ -222,43 +236,12 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 
 	}
 
-	private void printStats() {
-		System.out.print(state);
-		System.out.print("\t\tPublished: ");
-		System.out.print(publishedCount);
-		System.out.print(", Replied: ");
-		System.out.print(repliedCount);
-		System.out.print(", Success: ");
-		System.out.print(successCount);
-		System.out.print(", Failed: ");
-		System.out.print(failureCount);
-		System.out.print(", Connections: ");
-		System.out.print(numConnectionsEstablished);
-		System.out.print("/");
-		System.out.print(numConnectionsInitiated);
-		System.out.print(", Subscriptions: ");
-		System.out.print(numSubscriptionsEstablished);
-		System.out.print("\n");
-	}
-
 	@Override
 	public void send(Sampler<byte[], ?> sampler) throws Exception {
 		send();
 	}
 
 	private void send() throws InterruptedException {
-		// Log stats periodically
-		statLoggingService = Executors.newSingleThreadScheduledExecutor();
-		statLoggingService.scheduleAtFixedRate(new Runnable() {
-			@Override
-			public void run() {
-				printStats();
-			}
-
-		}, 0, 2, TimeUnit.SECONDS);
-
-		state = "Connecting and Publishing";
-
 		// Start a thread that periodically creates more connections with the broker(s)
 		connectionService = Executors.newSingleThreadScheduledExecutor();
 		connectionService.scheduleAtFixedRate(new Runnable() {
@@ -277,7 +260,7 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 						endTimeMillis = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(getConfig().getDuration(), getConfig().getDurationUnit());
 						logger.info("All " + getConfig().getNumConnections() + " connections have been established. The sender will publish the messages for an additional "
 								+ getConfig().getDuration() + " " + getConfig().getDurationUnit() + ", then terminate");
-						state = "Publishing";
+						state = "Pub/Sub";
 						return;
 					}
 				}
@@ -334,16 +317,15 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 
 			byte[] payload = payloads.get(publishedCount.get() % payloads.size());
 
-			msg.conn.value.publish(getConfig().getTopic(), Payload.toBytes(msg.conn.key, index++, payload), getConfig().getQos(), false, null);
+			msg.conn.value.publish(getConfig().getTopic(), Payload.toBytes(msg.conn.key, index++, payload), getConfig().getQos(), false, publishCallback);
 			publishedCount.incrementAndGet();
 
 			// Put the next message for this connection
 			outboundMessages.put(new DelayedMessage(msg.conn, System.currentTimeMillis() + messageIntervalMillis));
 		}
 
-		state = "Publish Done";
+		state = "Sub";
 		logger.info("All messages have been published");
-
 		connectionService.shutdown();
 	}
 
@@ -404,6 +386,25 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 		reportDatas.add(new ReportData("Connection_Establishment_Times.csv", sb.toString().getBytes()));
 
 		return reportDatas;
+	}
+
+	public void log() {
+		System.out.print(state);
+		System.out.print("\tPublished: ");
+		System.out.print(publishedCount);
+		System.out.print(", Replied: ");
+		System.out.print(repliedCount);
+		System.out.print(", Success: ");
+		System.out.print(successCount);
+		System.out.print(", Failed: ");
+		System.out.print(failureCount);
+		System.out.print(", Connections: ");
+		System.out.print(numConnectionsEstablished);
+		System.out.print("/");
+		System.out.print(numConnectionsInitiated);
+		System.out.print(", Subscriptions: ");
+		System.out.print(numSubscriptionsEstablished);
+		System.out.print("\n");
 	}
 
 }

@@ -53,9 +53,9 @@ public class SynchronousPahoMQTTReplyingJMSConsumer extends Receiver<Synchronous
 
 	private MqttClient mqttClient;
 
-	private int publishedCount;
-	private int successCount;
-	private int failureCount;
+	private volatile int publishedCount;
+	private volatile int successCount;
+	private volatile int failureCount;
 
 	public SynchronousPahoMQTTReplyingJMSConsumer(SynchronousPahoMQTTReplyingJMSConsumerConfig config) {
 		super(config);
@@ -196,7 +196,7 @@ public class SynchronousPahoMQTTReplyingJMSConsumer extends Receiver<Synchronous
 					try {
 						mqttClient.publish(mqttReplyTopic, payload, getConfig().getQos(), false);
 						publishedCount++;
-						printCounts(true);
+						successCount++;
 						break;
 
 					} catch (MqttException e) {
@@ -212,7 +212,7 @@ public class SynchronousPahoMQTTReplyingJMSConsumer extends Receiver<Synchronous
 							continue;
 
 						} else {
-							printCounts(false);
+							failureCount++;
 							break;
 						}
 					}
@@ -228,16 +228,6 @@ public class SynchronousPahoMQTTReplyingJMSConsumer extends Receiver<Synchronous
 		}
 	}
 
-	private synchronized void printCounts(boolean success) {
-		if (success) {
-			successCount++;
-		} else {
-			failureCount++;
-		}
-
-		logger.info("Published: " + publishedCount + ", " + "Success: " + successCount + ", Failed: " + failureCount);
-	}
-
 	@Override
 	public ArrayList<ReportData> report() throws InterruptedException {
 		StringBuilder sb = new StringBuilder(StringConstants.JMSACTIVEMQBROKERINTIME).append("\n");
@@ -250,6 +240,17 @@ public class SynchronousPahoMQTTReplyingJMSConsumer extends Receiver<Synchronous
 		}
 
 		return new ArrayList<ReportData>(Arrays.asList(new ReportData[] { new ReportData("SynchronousPahoMQTTReplyingJMSConsumer_JMS_In_Times.csv", sb.toString().getBytes()) }));
+	}
+
+	@Override
+	public void log() {
+		System.out.print("Published: ");
+		System.out.print(publishedCount);
+		System.out.print(", Success: ");
+		System.out.print(successCount);
+		System.out.print(", Failed: ");
+		System.out.print(failureCount);
+		System.out.print("\n");
 	}
 
 }

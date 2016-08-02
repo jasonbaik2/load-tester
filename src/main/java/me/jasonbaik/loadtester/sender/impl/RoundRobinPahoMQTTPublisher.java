@@ -131,14 +131,12 @@ public class RoundRobinPahoMQTTPublisher extends AbstractRoundRobinMQTTPublisher
 				}
 			}
 
-			logger.info("Replied: " + getRepliedCount().incrementAndGet());
 			repliedSeqNums.add(Integer.parseInt(Payload.extractMessageId(message.getPayload())));
 		}
 
 		@Override
 		public void deliveryComplete(IMqttDeliveryToken token) {
 			getSuccessCount().incrementAndGet();
-			printCounts();
 
 			if (token.getUserContext() != null) {
 				completedSeqNums.add((Integer) token.getUserContext());
@@ -157,7 +155,6 @@ public class RoundRobinPahoMQTTPublisher extends AbstractRoundRobinMQTTPublisher
 		public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
 			logger.error(exception);
 			disconnectedWhileInFlightCount.incrementAndGet();
-			printCounts();
 
 			if (asyncActionToken.getUserContext() != null) {
 				disconnectedInFlightSeqNums.add((Integer) asyncActionToken.getUserContext());
@@ -165,10 +162,6 @@ public class RoundRobinPahoMQTTPublisher extends AbstractRoundRobinMQTTPublisher
 		}
 
 	};
-
-	private void printCounts() {
-		logger.info("Published: " + getPublishedCount().get() + ", " + "Completed: " + getSuccessCount().get() + ", Disconnected While in Flight: " + disconnectedWhileInFlightCount.get());
-	}
 
 	public RoundRobinPahoMQTTPublisher(RoundRobinPahoMQTTPublisherConfig config) {
 		super(config);
@@ -246,7 +239,6 @@ public class RoundRobinPahoMQTTPublisher extends AbstractRoundRobinMQTTPublisher
 		logger.debug("Publishing a message using the client #" + cIndex);
 		clients.get(cIndex).publish(getConfig().getTopic(), Payload.toBytes(connectionId, index, payload), getConfig().getQos(), false, index, publishCallback);
 		getPublishedCount().incrementAndGet();
-		printCounts();
 		publishedSeqNums.add(index);
 	}
 
@@ -304,6 +296,22 @@ public class RoundRobinPahoMQTTPublisher extends AbstractRoundRobinMQTTPublisher
 		}
 
 		clients.clear();
+	}
+
+	@Override
+	public void log() {
+		System.out.print("Published: ");
+		System.out.print(getPublishedCount());
+		System.out.print(", Replied: ");
+		System.out.print(getRepliedCount());
+		System.out.print(", Completed: ");
+		System.out.print(getSuccessCount());
+		System.out.print(", Disconnected While in Flight: ");
+		System.out.print(disconnectedWhileInFlightCount);
+		System.out.print(" (");
+		System.out.print(isPubDone() ? "Pub Done" : "Publishing");
+		System.out.print(")");
+		System.out.print("\n");
 	}
 
 }

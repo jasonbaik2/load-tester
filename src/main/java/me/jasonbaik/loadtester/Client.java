@@ -7,6 +7,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.jms.Destination;
@@ -20,6 +23,7 @@ import javax.xml.bind.JAXBException;
 import me.jasonbaik.loadtester.constant.StringConstants;
 import me.jasonbaik.loadtester.receiver.Receiver;
 import me.jasonbaik.loadtester.receiver.ReceiverFactory;
+import me.jasonbaik.loadtester.reporter.Loggable;
 import me.jasonbaik.loadtester.sampler.Sampler;
 import me.jasonbaik.loadtester.sampler.SamplerFactory;
 import me.jasonbaik.loadtester.sender.Sender;
@@ -43,6 +47,9 @@ public class Client<S1, S2, R1> extends Node {
 	private volatile Sender<S1, ?> sender;
 	private volatile Sampler<S1, ?> sampler;
 	private volatile Receiver<?> receiver;
+
+	// Log stats periodically
+	private ScheduledExecutorService statLoggingService = Executors.newSingleThreadScheduledExecutor();
 
 	private String clientLog;
 
@@ -83,11 +90,14 @@ public class Client<S1, S2, R1> extends Node {
 				try {
 					if (sender != null) {
 						logger.info("Sending...");
+						log(sender);
 						sender.send(sampler);
 					} else if (receiver != null) {
 						logger.info("Receiving...");
+						log(receiver);
 						receiver.receive();
 					}
+
 				} catch (Exception e) {
 					logger.error(e);
 
@@ -98,7 +108,18 @@ public class Client<S1, S2, R1> extends Node {
 					}
 				}
 			}
+
 		}, (sender != null ? "Send" : "Receive") + " Thread").start();
+	}
+
+	private void log(final Loggable loggable) {
+		statLoggingService.scheduleAtFixedRate(new Runnable() {
+			@Override
+			public void run() {
+				loggable.log();
+			}
+
+		}, 0, 2, TimeUnit.SECONDS);
 	}
 
 	private List<ReportData> collect() throws InterruptedException, JMSException, IOException {
@@ -139,6 +160,8 @@ public class Client<S1, S2, R1> extends Node {
 	@Override
 	protected void destroy() throws Exception {
 		logger.info("Destroying the client...");
+
+		statLoggingService.shutdown();
 
 		if (sender != null) {
 			sender.destroy();

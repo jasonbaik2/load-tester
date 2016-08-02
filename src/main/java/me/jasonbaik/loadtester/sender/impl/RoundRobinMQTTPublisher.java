@@ -119,38 +119,6 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 					topicMismatchedMsgs.add(Payload.extractUniqueId(body.toByteArray()));
 				}
 			}
-
-			logger.info("Replied: " + getRepliedCount().incrementAndGet() + " / " + getPublishedCount().get() + (isPubDone() ? " (Publish Done)" : ""));
-		}
-
-	};
-
-	private Callback<Void> publishCallback = new Callback<Void>() {
-
-		@Override
-		public void onSuccess(Void value) {
-			printCounts(true);
-		}
-
-		@Override
-		public void onFailure(Throwable value) {
-			logger.error(value);
-			printCounts(false);
-		}
-
-		private void printCounts(boolean success) {
-			int sCount;
-			int fCount;
-
-			if (success) {
-				sCount = getSuccessCount().incrementAndGet();
-				fCount = getFailureCount().get();
-			} else {
-				sCount = getSuccessCount().get();
-				fCount = getFailureCount().incrementAndGet();
-			}
-
-			logger.info("Published: " + getPublishedCount().get() + ", " + "Success: " + sCount + ", Failed: " + fCount);
 		}
 
 	};
@@ -211,7 +179,7 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 		String connectionId = uuid + "-" + (cIndex);
 
 		logger.debug("Publishing a message using the client #" + cIndex);
-		connections.get(cIndex).publish(getConfig().getTopic(), Payload.toBytes(connectionId, index, payload), getConfig().getQos(), false, publishCallback);
+		connections.get(cIndex).publish(getConfig().getTopic(), Payload.toBytes(connectionId, index, payload), getConfig().getQos(), false, null);
 		getPublishedCount().incrementAndGet();
 	}
 
@@ -241,6 +209,22 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 
 		connections.clear();
 		tracers.clear();
+	}
+
+	@Override
+	public void log() {
+		System.out.print("Published: ");
+		System.out.print(getPublishedCount());
+		System.out.print(", Replied: ");
+		System.out.print(getRepliedCount());
+		System.out.print(", Success: ");
+		System.out.print(getSuccessCount());
+		System.out.print(", Failed: ");
+		System.out.print(getFailureCount());
+		System.out.print(" (");
+		System.out.print(isPubDone() ? "Pub Done" : "Publishing");
+		System.out.print(")");
+		System.out.print("\n");
 	}
 
 }

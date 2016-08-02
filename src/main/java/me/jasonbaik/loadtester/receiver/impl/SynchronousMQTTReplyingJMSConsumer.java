@@ -49,9 +49,9 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 	private FutureConnection mqttConn;
 	private MQTTFlightTracer tracer = new MQTTFlightTracer();
 
-	private int publishedCount;
-	private int successCount;
-	private int failureCount;
+	private volatile int publishedCount;
+	private volatile int successCount;
+	private volatile int failureCount;
 
 	public SynchronousMQTTReplyingJMSConsumer(SynchronousMQTTReplyingJMSConsumerConfig config) {
 		super(config);
@@ -121,11 +121,11 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 
 				try {
 					future.await();
-					printCounts(true);
+					successCount++;
 
 				} catch (Exception e) {
 					logger.error("Failed to publish a reply", e);
-					printCounts(false);
+					failureCount++;
 				}
 
 				inTimes.put(Payload.extractUniqueId(payload), message.getLongProperty(StringConstants.JMSACTIVEMQBROKERINTIME));
@@ -136,16 +136,6 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 		} else {
 			throw new IllegalArgumentException();
 		}
-	}
-
-	private void printCounts(boolean success) {
-		if (success) {
-			successCount++;
-		} else {
-			failureCount++;
-		}
-
-		logger.info("Published: " + publishedCount + ", " + "Success: " + successCount + ", Failed: " + failureCount);
 	}
 
 	@Override
@@ -164,4 +154,16 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 		return new ArrayList<ReportData>(Arrays.asList(new ReportData[] { new ReportData("SynchronousMQTTReplyingJMSConsumer_MQTT_Flight_Data.csv", mqttFlightData),
 				new ReportData("MQTTReplyingJMSConsumer_JMS_In_Times.csv", sb.toString().getBytes()) }));
 	}
+
+	@Override
+	public void log() {
+		System.out.print("Published: ");
+		System.out.print(publishedCount);
+		System.out.print(", Success: ");
+		System.out.print(successCount);
+		System.out.print(", Failed: ");
+		System.out.print(failureCount);
+		System.out.print("\n");
+	}
+
 }
