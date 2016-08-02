@@ -13,7 +13,7 @@ public class Scenario<S1, S2, R1> implements Serializable {
 	private List<Receive<R1>> receives;
 	private long maxAttackTimeSeconds;
 	private String reportDir;
-	private boolean gcBrokers;
+	private boolean gcBrokers = true;
 
 	public List<Send<S1, S2>> getSends() {
 		return sends;

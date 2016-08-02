@@ -270,7 +270,9 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 			public void run(int index, byte[] payload) throws Exception {
 				Pair<String, CallbackConnection> conn = activeConnections.take();
 
-				logger.debug("Publishing a message using the connection " + conn.key);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Publishing a message using the connection " + conn.key);
+				}
 
 				conn.value.publish(getConfig().getTopic(), Payload.toBytes(conn.key, index, payload), getConfig().getQos(), false, publishCallback);
 				publishedCount.incrementAndGet();
@@ -343,8 +345,10 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 
 		StringBuilder sb = new StringBuilder("Connection_Establishment_Times\n");
 
-		for (Long l : connectionEstablishmentTimes) {
-			sb.append(Long.toString(l)).append("\n");
+		synchronized (connectionEstablishmentTimes) {
+			for (Long l : connectionEstablishmentTimes) {
+				sb.append(Long.toString(l)).append("\n");
+			}
 		}
 
 		reportDatas.add(new ReportData("Connection_Establishment_Times.csv", sb.toString().getBytes()));
