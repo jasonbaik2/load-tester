@@ -358,8 +358,12 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 		for (Send<S1, S2> s : currentScenario.getSends()) {
 			fw.write("Client UUID=" + s.getClientUUID());
 			fw.write("\n");
-			fw.write("Sampler=" + s.getSamplerConfig().describe());
-			fw.write("\n");
+
+			if (s.getSamplerConfig() != null) {
+				fw.write("Sampler=" + s.getSamplerConfig().describe());
+				fw.write("\n");
+			}
+
 			fw.write("Sender=" + s.getSenderConfig().describe());
 			fw.write("\n");
 			fw.write("\n");

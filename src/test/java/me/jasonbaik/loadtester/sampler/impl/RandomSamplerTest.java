@@ -4,8 +4,6 @@ import java.util.concurrent.TimeUnit;
 
 import me.jasonbaik.loadtester.sampler.PayloadIterator;
 import me.jasonbaik.loadtester.sampler.SamplerTask;
-import me.jasonbaik.loadtester.sampler.impl.RandomSampler;
-import me.jasonbaik.loadtester.sampler.impl.RandomSamplerConfig;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -15,7 +13,7 @@ public class RandomSamplerTest {
 	private int numRun;
 
 	@Test
-	public void testForEach() {
+	public void testForEach() throws InterruptedException {
 		int interval = 100;
 		final int count = 50;
 
@@ -65,7 +63,7 @@ public class RandomSamplerTest {
 	}
 
 	@Test
-	public void testDuring() {
+	public void testDuring() throws InterruptedException {
 		int interval = 100;
 		int duration = 5000;
 

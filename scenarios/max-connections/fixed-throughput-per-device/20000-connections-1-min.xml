@@ -8,8 +8,8 @@
 	<import resource="base.xml" />
 
 	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.FixedThroughputPerConnectionMQTTPublisherConfig" parent="senderConfigBase">
-		<property name="numConnections" value="80000" />
-		<property name="messageInterval" value="2" />
+		<property name="numConnections" value="5000" />
+		<property name="messageInterval" value="1" />
 		<property name="messageIntervalUnit" value="MINUTES" />
 	</bean>
 

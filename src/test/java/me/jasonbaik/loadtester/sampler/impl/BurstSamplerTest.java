@@ -15,7 +15,7 @@ public class BurstSamplerTest {
 	private int numRun;
 
 	@Test
-	public void testForEach() {
+	public void testForEach() throws InterruptedException {
 		int interval = 2;
 		int burstCount = 10;
 
@@ -57,7 +57,7 @@ public class BurstSamplerTest {
 	}
 
 	@Test
-	public void testDuring() {
+	public void testDuring() throws InterruptedException {
 		int duration = 10;
 		int interval = 2;
 		int burstCount = 10;

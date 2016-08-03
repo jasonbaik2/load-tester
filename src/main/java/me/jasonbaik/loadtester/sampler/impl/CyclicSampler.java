@@ -30,16 +30,16 @@ public class CyclicSampler extends Sampler<byte[], CyclicSamplerConfig> {
 	}
 
 	@Override
-	public void forEach(SamplerTask<byte[]> samplerTask, List<byte[]> payloads) {
+	public void forEach(SamplerTask<byte[]> samplerTask, List<byte[]> payloads) throws InterruptedException {
 		executeCycles(new FixedCountRunnable(samplerTask, payloads));
 	}
 
 	@Override
-	public void forEach(SamplerTask<byte[]> samplerTask, PayloadIterator<byte[]> payloadIterator) {
+	public void forEach(SamplerTask<byte[]> samplerTask, PayloadIterator<byte[]> payloadIterator) throws InterruptedException {
 		executeCycles(new FixedCountRunnable(samplerTask, payloadIterator));
 	}
 
-	private void executeCycles(FixedCountRunnable runnable) {
+	private void executeCycles(FixedCountRunnable runnable) throws InterruptedException {
 		logger.info("CyclicSampler will run the task with a " + getConfig().getInterval() + " " + getConfig().getIntervalUnit() + " interval");
 
 		es = Executors.newSingleThreadScheduledExecutor();
@@ -51,7 +51,7 @@ public class CyclicSampler extends Sampler<byte[], CyclicSamplerConfig> {
 			try {
 				terminated = es.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
 			} catch (InterruptedException e) {
-				logger.error(e);
+				throw new InterruptedException("Cycle executor interrupted");
 			}
 		}
 	}
@@ -108,16 +108,16 @@ public class CyclicSampler extends Sampler<byte[], CyclicSamplerConfig> {
 	}
 
 	@Override
-	public void during(SamplerTask<byte[]> samplerTask, List<byte[]> payloads, long duration, TimeUnit unit) {
+	public void during(SamplerTask<byte[]> samplerTask, List<byte[]> payloads, long duration, TimeUnit unit) throws InterruptedException {
 		executeCycles(new FixedDurationRunnable(samplerTask, payloads, System.nanoTime() + TimeUnit.NANOSECONDS.convert(duration, unit)), duration, unit);
 	}
 
 	@Override
-	public void during(SamplerTask<byte[]> samplerTask, PayloadIterator<byte[]> payloadIterator, long duration, TimeUnit unit) {
+	public void during(SamplerTask<byte[]> samplerTask, PayloadIterator<byte[]> payloadIterator, long duration, TimeUnit unit) throws InterruptedException {
 		executeCycles(new FixedDurationRunnable(samplerTask, payloadIterator, System.nanoTime() + TimeUnit.NANOSECONDS.convert(duration, unit)), duration, unit);
 	}
 
-	private void executeCycles(FixedDurationRunnable runnable, long duration, TimeUnit unit) {
+	private void executeCycles(FixedDurationRunnable runnable, long duration, TimeUnit unit) throws InterruptedException {
 		logger.info("CyclicSampler will run the task for " + duration + " " + unit + " with a " + getConfig().getInterval() + " " + getConfig().getIntervalUnit() + " interval");
 
 		es = Executors.newSingleThreadScheduledExecutor();
@@ -129,7 +129,7 @@ public class CyclicSampler extends Sampler<byte[], CyclicSamplerConfig> {
 			try {
 				terminated = es.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
 			} catch (InterruptedException e) {
-				logger.error(e);
+				throw new InterruptedException("Cycle executor interrupted");
 			}
 		}
 	}

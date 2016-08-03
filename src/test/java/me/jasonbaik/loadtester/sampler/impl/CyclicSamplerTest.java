@@ -15,7 +15,7 @@ public class CyclicSamplerTest {
 	private int numRun;
 
 	@Test
-	public void testForEach() {
+	public void testForEach() throws InterruptedException {
 		int interval = 500;
 		final int count = 10;
 
@@ -59,7 +59,7 @@ public class CyclicSamplerTest {
 	}
 
 	@Test
-	public void testDuring() {
+	public void testDuring() throws InterruptedException {
 		int duration = 5;
 		int interval = 1;
 

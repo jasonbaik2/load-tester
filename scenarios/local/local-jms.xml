@@ -58,15 +58,9 @@
 		<property name="intervalUnit" value="MILLISECONDS" />
 	</bean>
 
-	<bean id="receiverConfig" class="me.jasonbaik.loadtester.receiver.impl.MQTTReplyingJMSConsumerConfig">
+	<bean id="receiverConfig" class="me.jasonbaik.loadtester.receiver.impl.JMSReplyingJMSConsumerConfig">
 		<property name="brokers" ref="brokers" />
-		<property name="ssl" value="false" />
 		<property name="queue" value="mqtt.attack.queue" />
-		<property name="keyStore" value="keystore/client.ks" />
-		<property name="keyStorePassword" value="password" />
-		<property name="trustStore" value="keystore/client.ks" />
-		<property name="trustStorePassword" value="password" />
-		<property name="qos" value="EXACTLY_ONCE" />
 	</bean>
 
 	<util:list id="scenarios" value-type="me.jasonbaik.loadtester.valueobject.Scenario">

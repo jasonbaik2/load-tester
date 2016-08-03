@@ -1,5 +1,6 @@
 package me.jasonbaik.loadtester;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -48,8 +49,10 @@ public class Client<S1, S2, R1> extends Node {
 	private volatile Sampler<S1, ?> sampler;
 	private volatile Receiver<?> receiver;
 
-	// Log stats periodically
-	private ScheduledExecutorService statLoggingService = Executors.newSingleThreadScheduledExecutor();
+	private volatile Thread attackThread;
+
+	// Check status of attack periodically
+	private volatile ScheduledExecutorService statusService;
 
 	private String clientLog;
 
@@ -84,36 +87,43 @@ public class Client<S1, S2, R1> extends Node {
 		logger.info("GC'ing prior to the attack");
 		System.gc();
 
-		new Thread(new Runnable() {
+		attackThread = new Thread(new Runnable() {
+
 			@Override
 			public void run() {
 				try {
 					if (sender != null) {
 						logger.info("Sending...");
-						log(sender);
+						startStatusService(sender);
 						sender.send(sampler);
 					} else if (receiver != null) {
 						logger.info("Receiving...");
-						log(receiver);
+						startStatusService(receiver);
 						receiver.receive();
 					}
+				} catch (InterruptedException e) {
+					logger.warn("Attack interrupted", e);
 
 				} catch (Exception e) {
 					logger.error(e);
 
 					try {
-						sendCommand(owningControllerQueue.get(), Command.ERROR, e.getMessage().getBytes());
+						sendCommand(owningControllerQueue.get(), Command.ERROR, e.getMessage() != null ? e.getMessage().getBytes() : null);
 					} catch (JMSException e1) {
 						logger.error(e1);
 					}
 				}
 			}
 
-		}, (sender != null ? "Send" : "Receive") + " Thread").start();
+		}, (sender != null ? "Send" : "Receive") + " Thread");
+
+		attackThread.start();
 	}
 
-	private void log(final Loggable loggable) {
-		statLoggingService.scheduleAtFixedRate(new Runnable() {
+	private void startStatusService(final Loggable loggable) {
+		statusService = Executors.newSingleThreadScheduledExecutor();
+		statusService.scheduleAtFixedRate(new Runnable() {
+
 			@Override
 			public void run() {
 				loggable.log();
@@ -123,8 +133,9 @@ public class Client<S1, S2, R1> extends Node {
 	}
 
 	private List<ReportData> collect() throws InterruptedException, JMSException, IOException {
-
 		logger.info("Sending the collected flight data to the controller...");
+
+		interrupt();
 
 		List<ReportData> data = null;
 
@@ -136,18 +147,23 @@ public class Client<S1, S2, R1> extends Node {
 		}
 
 		if (this.getClientLog() != null && this.getClientLog().length() > 0) {
-			// FIXME What if the client log file is modified while being read?
 			try {
 				File file = new File(this.getClientLog());
 
 				if (file.exists()) {
-					byte[] bytes = new byte[(int) file.length()];
+					ByteArrayOutputStream os = new ByteArrayOutputStream();
+					byte[] buffer = new byte[1024];
+					int numRead = 0;
 
 					InputStream is = new FileInputStream(file);
-					is.read(bytes, 0, (int) file.length());
-					is.close();
 
-					data.add(new ReportData("client.log", bytes));
+					while ((numRead = is.read(buffer)) > 0) {
+						os.write(buffer, 0, numRead);
+					}
+
+					is.close();
+					os.close();
+					data.add(new ReportData("client.log", os.toByteArray()));
 				}
 			} catch (Exception e) {
 				logger.error("Failed to collect the client log", e);
@@ -157,14 +173,30 @@ public class Client<S1, S2, R1> extends Node {
 		return data;
 	}
 
+	private void interrupt() {
+		logger.info("Interrupting the client");
+
+		if (attackThread != null) {
+			attackThread.interrupt();
+		}
+
+		if (statusService != null) {
+			statusService.shutdown();
+		}
+	}
+
 	@Override
-	protected void destroy() throws Exception {
+	protected void destroy() {
 		logger.info("Destroying the client...");
 
-		statLoggingService.shutdown();
+		interrupt();
 
 		if (sender != null) {
-			sender.destroy();
+			try {
+				sender.destroy();
+			} catch (Exception e) {
+				logger.error("Failed to destroy the sender", e);
+			}
 		}
 
 		if (sampler != null) {
@@ -172,7 +204,11 @@ public class Client<S1, S2, R1> extends Node {
 		}
 
 		if (receiver != null) {
-			receiver.destroy();
+			try {
+				receiver.destroy();
+			} catch (Exception e) {
+				logger.error("Failed to destroy the receiver", e);
+			}
 		}
 
 		logger.info("Successfully destroyed the client");

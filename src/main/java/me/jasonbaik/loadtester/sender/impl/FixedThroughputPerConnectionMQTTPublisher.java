@@ -3,7 +3,6 @@ package me.jasonbaik.loadtester.sender.impl;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
@@ -15,6 +14,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import me.jasonbaik.loadtester.client.MQTTClientFactory;
+import me.jasonbaik.loadtester.reporter.impl.ConnectionStatReporter;
 import me.jasonbaik.loadtester.sampler.Sampler;
 import me.jasonbaik.loadtester.sender.Sender;
 import me.jasonbaik.loadtester.util.MQTTFlightTracer;
@@ -50,8 +50,9 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 
 	private volatile String state = "Conn/Pub/Sub";
 
-	private volatile int numConnectionsInitiated;
+	private AtomicInteger numConnectionsInitiated = new AtomicInteger();
 	private AtomicInteger numConnectionsEstablished = new AtomicInteger();
+	private AtomicInteger numSubscriptionsInitiated = new AtomicInteger();
 	private AtomicInteger numSubscriptionsEstablished = new AtomicInteger();
 
 	private int brokerIndex = 0;
@@ -65,7 +66,7 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 	private long messageIntervalMillis;
 
 	private List<MQTTFlightTracer> tracers;
-	private List<Long> connectionEstablishmentTimes;
+	private ConnectionStatReporter connectionStatReporter = new ConnectionStatReporter();
 
 	static class Pair<K, V> {
 		public Pair(K key, V value) {
@@ -91,15 +92,18 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 
 		@Override
 		public void onSuccess(Void value) {
-			int connectionNum = numConnectionsEstablished.incrementAndGet();
-			connectionEstablishmentTimes.add(System.currentTimeMillis());
-			conn.subscribe(new Topic[] { new Topic(client.getClientId().toString(), getConfig().getQos()) }, new SubscribeCallback(new Pair<String, CallbackConnection>(uuid + "-" + connectionNum,
-					conn)));
+			numConnectionsEstablished.incrementAndGet();
+			connectionStatReporter.recordConnectionComp(client.getClientId().toString());
+
+			conn.subscribe(new Topic[] { new Topic(client.getClientId().toString(), getConfig().getQos()) }, new SubscribeCallback(new Pair<String, CallbackConnection>(
+					client.getClientId().toString(), conn)));
+			numSubscriptionsInitiated.incrementAndGet();
 		}
 
 		@Override
 		public void onFailure(Throwable value) {
 			logger.error("Connection " + client.getClientId() + " could not be established", value);
+			numConnectionsInitiated.decrementAndGet();
 		}
 
 	};
@@ -114,11 +118,19 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 
 		@Override
 		public void onSuccess(byte[] value) {
-			numSubscriptionsEstablished.incrementAndGet();
+			int subscriptionNum = numSubscriptionsEstablished.incrementAndGet();
 			activeConnections.add(conn);
+			connectionStatReporter.recordSubscriptionComp(conn.key);
 
 			// Queue the first outbound message for this connection now
 			outboundMessages.put(new DelayedMessage(conn, System.currentTimeMillis()));
+
+			if (subscriptionNum == getConfig().getNumConnections()) {
+				endTimeMillis = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(getConfig().getDuration(), getConfig().getDurationUnit());
+				logger.info("All " + getConfig().getNumConnections() + " subscriptions have been established. The sender will publish the messages for an additional " + getConfig().getDuration()
+						+ " " + getConfig().getDurationUnit() + ", then terminate");
+				state = "Pub/Sub";
+			}
 		}
 
 		@Override
@@ -199,7 +211,6 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 		}
 
 		activeConnections = Collections.synchronizedList(new ArrayList<Pair<String, CallbackConnection>>(getConfig().getNumConnections()));
-		connectionEstablishmentTimes = Collections.synchronizedList(new ArrayList<Long>(getConfig().getNumConnections()));
 
 		if (getConfig().isTrace()) {
 			tracers = Collections.synchronizedList(new ArrayList<MQTTFlightTracer>(getConfig().getNumConnections()));
@@ -237,7 +248,7 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 	}
 
 	@Override
-	public void send(Sampler<byte[], ?> sampler) throws Exception {
+	public void send(Sampler<byte[], ?> sampler) throws InterruptedException {
 		send();
 	}
 
@@ -248,19 +259,13 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 
 			@Override
 			public void run() {
-				if (numConnectionsEstablished.get() >= getConfig().getNumConnections()) {
+				if (numConnectionsInitiated.get() >= getConfig().getNumConnections()) {
 					synchronized (connectionService) {
 						if (connectionService.isShutdown()) {
 							return;
 						}
 
 						connectionService.shutdown();
-
-						// All connections established. Set the end time at which the sender should terminate
-						endTimeMillis = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(getConfig().getDuration(), getConfig().getDurationUnit());
-						logger.info("All " + getConfig().getNumConnections() + " connections have been established. The sender will publish the messages for an additional "
-								+ getConfig().getDuration() + " " + getConfig().getDurationUnit() + ", then terminate");
-						state = "Pub/Sub";
 						return;
 					}
 				}
@@ -275,7 +280,8 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 						throw new RuntimeException(e);
 					}
 
-					client.setClientId(uuid + "-" + numConnectionsInitiated++);
+					String connectionId = uuid + "-" + numConnectionsInitiated.getAndIncrement();
+					client.setClientId(connectionId);
 					client.setCleanSession(getConfig().isCleanSession());
 					client.setUserName(broker.getUsername());
 					client.setPassword(broker.getPassword());
@@ -296,6 +302,7 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 					CallbackConnection conn = client.callbackConnection();
 					conn.listener(connectionListener);
 					conn.connect(new ConnectCallback(client, conn));
+					connectionStatReporter.recordConnectionInit(connectionId);
 				}
 			}
 
@@ -305,6 +312,10 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 
 		// Stop when the duration expires
 		while (endTimeMillis > System.currentTimeMillis()) {
+			if (Thread.currentThread().isInterrupted()) {
+				throw new InterruptedException("Send interrupted");
+			}
+
 			DelayedMessage msg = outboundMessages.poll(1, TimeUnit.SECONDS);
 
 			if (msg == null) {
@@ -359,6 +370,10 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 		if (tracers != null) {
 			tracers.clear();
 		}
+
+		if (connectionStatReporter != null) {
+			connectionStatReporter.destroy();
+		}
 	}
 
 	@Override
@@ -368,23 +383,16 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 		if (getConfig().isTrace()) {
 			List<MQTTFlightData> flightData = new LinkedList<MQTTFlightData>();
 
-			for (MQTTFlightTracer tracer : this.tracers) {
-				flightData.addAll(tracer.getFlightData());
+			synchronized (this.tracers) {
+				for (MQTTFlightTracer tracer : this.tracers) {
+					flightData.addAll(tracer.getFlightData());
+				}
 			}
 
 			reportDatas.add(new ReportData("RoundRobinMQTTPublisher_MQTT_Flight_Data.csv", MQTTFlightTracer.toCsv(flightData)));
 		}
 
-		StringBuilder sb = new StringBuilder("Connection_Establishment_Times\n");
-
-		synchronized (connectionEstablishmentTimes) {
-			for (Iterator<Long> iter = connectionEstablishmentTimes.iterator(); iter.hasNext();) {
-				sb.append(Long.toString(iter.next())).append("\n");
-			}
-		}
-
-		reportDatas.add(new ReportData("Connection_Establishment_Times.csv", sb.toString().getBytes()));
-
+		reportDatas.addAll(connectionStatReporter.report());
 		return reportDatas;
 	}
 
@@ -404,6 +412,8 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 		System.out.print(numConnectionsInitiated);
 		System.out.print(", Subscriptions: ");
 		System.out.print(numSubscriptionsEstablished);
+		System.out.print("/");
+		System.out.print(numSubscriptionsInitiated);
 		System.out.print("\n");
 	}
 

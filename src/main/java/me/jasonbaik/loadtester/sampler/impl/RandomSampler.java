@@ -37,7 +37,7 @@ public class RandomSampler extends Sampler<byte[], RandomSamplerConfig> {
 	}
 
 	@Override
-	public void forEach(SamplerTask<byte[]> samplerTask, List<byte[]> payloads) {
+	public void forEach(SamplerTask<byte[]> samplerTask, List<byte[]> payloads) throws InterruptedException {
 		logger.info("Generating random delays for " + payloads.size() + " payloads with an expected value of " + getConfig().getExpectedInterval() + " " + getConfig().getExpectedIntervalUnit());
 
 		long cumulativeDelay = 0;
@@ -53,6 +53,10 @@ public class RandomSampler extends Sampler<byte[], RandomSamplerConfig> {
 		startTime = System.currentTimeMillis();
 
 		for (int index = 0; !dq.isEmpty();) {
+			if (Thread.currentThread().isInterrupted()) {
+				throw new InterruptedException("Sampler thread interrupted");
+			}
+
 			try {
 				dq.take();
 
@@ -67,13 +71,17 @@ public class RandomSampler extends Sampler<byte[], RandomSamplerConfig> {
 	}
 
 	@Override
-	public void forEach(SamplerTask<byte[]> samplerTask, PayloadIterator<byte[]> payloadGenerator) {
+	public void forEach(SamplerTask<byte[]> samplerTask, PayloadIterator<byte[]> payloadGenerator) throws InterruptedException {
 		logger.info("Running the task with random delays with an expected value of " + getConfig().getExpectedInterval() + " " + getConfig().getExpectedIntervalUnit());
 
 		long cumulativeDelay = 0;
 		startTime = System.currentTimeMillis();
 
 		for (int index = 0; payloadGenerator.hasNext();) {
+			if (Thread.currentThread().isInterrupted()) {
+				throw new InterruptedException("Sampler thread interrupted");
+			}
+
 			long delay = randomDelay(getConfig().getExpectedInterval(), getConfig().getExpectedIntervalUnit());
 			cumulativeDelay += delay;
 			dq.add(new RandomlyDelayed(cumulativeDelay));
@@ -98,14 +106,19 @@ public class RandomSampler extends Sampler<byte[], RandomSamplerConfig> {
 	 * @param payloads
 	 * @param duration
 	 * @param unit
+	 * @throws InterruptedException
 	 */
 	@Override
-	public void during(SamplerTask<byte[]> samplerTask, List<byte[]> payloads, long duration, TimeUnit unit) {
+	public void during(SamplerTask<byte[]> samplerTask, List<byte[]> payloads, long duration, TimeUnit unit) throws InterruptedException {
 		generateRandomDelays(duration, unit);
 
 		startTime = System.currentTimeMillis();
 
 		for (int index = 0; !dq.isEmpty();) {
+			if (Thread.currentThread().isInterrupted()) {
+				throw new InterruptedException("Sampler thread interrupted");
+			}
+
 			try {
 				dq.take();
 
@@ -128,14 +141,19 @@ public class RandomSampler extends Sampler<byte[], RandomSamplerConfig> {
 	 * @param payloads
 	 * @param duration
 	 * @param unit
+	 * @throws InterruptedException
 	 */
 	@Override
-	public void during(SamplerTask<byte[]> samplerTask, PayloadIterator<byte[]> payloadGenerator, long duration, TimeUnit unit) {
+	public void during(SamplerTask<byte[]> samplerTask, PayloadIterator<byte[]> payloadGenerator, long duration, TimeUnit unit) throws InterruptedException {
 		generateRandomDelays(duration, unit);
 
 		startTime = System.currentTimeMillis();
 
 		for (int index = 0; !dq.isEmpty();) {
+			if (Thread.currentThread().isInterrupted()) {
+				throw new InterruptedException("Sampler thread interrupted");
+			}
+
 			try {
 				dq.take();
 

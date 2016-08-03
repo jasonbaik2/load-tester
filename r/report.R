@@ -13,7 +13,7 @@ report <- function (reportDir, reportFile, sends, receives, gcFiles, fullGcFiles
   
   for (i in seq_along(sends)) {
     sendMQTTFlightFiles[i] = paste(sep="/", reportDir, sends[i], "RoundRobinMQTTPublisher_MQTT_Flight_Data.csv")
-    connectionFiles[i] = paste(sep="/", reportDir, sends[i], "Connection_Establishment_Times.csv")
+    connectionFiles[i] = paste(sep="/", reportDir, sends[i], "Connection_Stats.csv")
   }
   
   receiveMQTTFlightFiles = vector(length = length(receives))

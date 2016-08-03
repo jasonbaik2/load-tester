@@ -174,7 +174,17 @@ public class RoundRobinPahoMQTTPublisher extends AbstractRoundRobinMQTTPublisher
 
 		clients = Collections.synchronizedList(new ArrayList<MqttAsyncClient>(getConfig().getNumConnections()));
 		connectionLatch = new CountDownLatch(getConfig().getNumConnections());
+	}
 
+	static String[] rotateBrokers(String[] brokers) {
+		String[] rotated = new String[brokers.length];
+		System.arraycopy(brokers, 1, rotated, 0, brokers.length - 1);
+		rotated[brokers.length - 1] = brokers[0];
+		return rotated;
+	}
+
+	@Override
+	protected void connect() throws Exception {
 		logger.info("Initiating " + getConfig().getNumConnections() + " connections with a step size of " + getConfig().getConnectionStepSize() + " and a step interval of "
 				+ getConfig().getConnectionStepIntervalMilli() + "ms...");
 
@@ -222,14 +232,7 @@ public class RoundRobinPahoMQTTPublisher extends AbstractRoundRobinMQTTPublisher
 		}
 
 		logger.info("Successfully established all " + getConfig().getNumConnections() + " connections");
-	}
-
-	static String[] rotateBrokers(String[] brokers) {
-		String[] rotated = new String[brokers.length];
-		System.arraycopy(brokers, 1, rotated, 0, brokers.length - 1);
-		rotated[brokers.length - 1] = brokers[0];
-		return rotated;
-	}
+	};
 
 	@Override
 	protected void roundRobinSend(int index, byte[] payload) throws MqttPersistenceException, MqttException {
@@ -300,7 +303,8 @@ public class RoundRobinPahoMQTTPublisher extends AbstractRoundRobinMQTTPublisher
 
 	@Override
 	public void log() {
-		System.out.print("Published: ");
+		System.out.print(getState());
+		System.out.print("\tPublished: ");
 		System.out.print(getPublishedCount());
 		System.out.print(", Replied: ");
 		System.out.print(getRepliedCount());
@@ -308,9 +312,6 @@ public class RoundRobinPahoMQTTPublisher extends AbstractRoundRobinMQTTPublisher
 		System.out.print(getSuccessCount());
 		System.out.print(", Disconnected While in Flight: ");
 		System.out.print(disconnectedWhileInFlightCount);
-		System.out.print(" (");
-		System.out.print(isPubDone() ? "Pub Done" : "Publishing");
-		System.out.print(")");
 		System.out.print("\n");
 	}
 

@@ -44,9 +44,9 @@
 		<property name="qos" value="EXACTLY_ONCE" />
 		<property name="keepAliveIntervalMilli" value="0" />
 		<property name="topic" value="mqtt/attack" />
-		<property name="newConnectionInterval" value="200" />
+		<property name="newConnectionInterval" value="60" />
 		<property name="newConnectionIntervalUnit" value="MILLISECONDS" />
-		<property name="connectionStepSize" value="2" />
+		<property name="connectionStepSize" value="1" />
 		<property name="duration" value="10" />
 		<property name="durationUnit" value="MINUTES" />
 	</bean>

@@ -26,7 +26,7 @@ public abstract class AbstractRoundRobinMQTTPublisher<T extends AbstractRoundRob
 	private AtomicInteger failureCount = new AtomicInteger(0);
 	private AtomicInteger repliedCount = new AtomicInteger(0);
 
-	private volatile boolean pubDone;
+	private volatile String state = "Connecting";
 
 	private int brokerIndex = 0;
 
@@ -52,6 +52,11 @@ public abstract class AbstractRoundRobinMQTTPublisher<T extends AbstractRoundRob
 
 	@Override
 	public void send(Sampler<byte[], ?> sampler) throws Exception {
+		// Establish all connections before publishing
+		connect();
+
+		state = "Publishing";
+
 		SamplerTask<byte[]> task = new SamplerTask<byte[]>() {
 
 			@Override
@@ -84,7 +89,6 @@ public abstract class AbstractRoundRobinMQTTPublisher<T extends AbstractRoundRob
 			};
 
 			sampler.during(task, payloadIterator, getConfig().getDuration(), getConfig().getDurationUnit());
-			pubDone = true;
 
 		} else if (getConfig().getNumMessages() != null) {
 			logger.info("Publishing " + getConfig().getNumMessages() + " messages...");
@@ -112,9 +116,12 @@ public abstract class AbstractRoundRobinMQTTPublisher<T extends AbstractRoundRob
 			};
 
 			sampler.forEach(task, payloadIterator);
-			pubDone = true;
 		}
+
+		state = "Publish Done";
 	}
+
+	protected abstract void connect() throws Exception;
 
 	protected abstract void roundRobinSend(int index, byte[] payload) throws Exception;
 
@@ -166,20 +173,20 @@ public abstract class AbstractRoundRobinMQTTPublisher<T extends AbstractRoundRob
 		this.repliedCount = repliedCount;
 	}
 
-	public boolean isPubDone() {
-		return pubDone;
-	}
-
-	public void setPubDone(boolean pubDone) {
-		this.pubDone = pubDone;
-	}
-
 	public int getBrokerIndex() {
 		return brokerIndex;
 	}
 
 	public void setBrokerIndex(int brokerIndex) {
 		this.brokerIndex = brokerIndex;
+	}
+
+	public String getState() {
+		return state;
+	}
+
+	public void setState(String state) {
+		this.state = state;
 	}
 
 }

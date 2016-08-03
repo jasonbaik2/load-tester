@@ -17,13 +17,13 @@ public abstract class Sampler<T1, T2 extends SamplerConfig<?>> implements Report
 
 	public abstract void destroy();
 
-	public abstract void forEach(SamplerTask<T1> samplerTask, List<byte[]> payloads);
+	public abstract void forEach(SamplerTask<T1> samplerTask, List<byte[]> payloads) throws InterruptedException;
 
-	public abstract void forEach(SamplerTask<T1> samplerTask, PayloadIterator<byte[]> payloadIterator);
+	public abstract void forEach(SamplerTask<T1> samplerTask, PayloadIterator<byte[]> payloadIterator) throws InterruptedException;
 
-	public abstract void during(SamplerTask<T1> samplerTask, List<byte[]> payloads, long duration, TimeUnit unit);
+	public abstract void during(SamplerTask<T1> samplerTask, List<byte[]> payloads, long duration, TimeUnit unit) throws InterruptedException;
 
-	public abstract void during(SamplerTask<T1> samplerTask, PayloadIterator<byte[]> payloadIterator, long duration, TimeUnit unit);
+	public abstract void during(SamplerTask<T1> samplerTask, PayloadIterator<byte[]> payloadIterator, long duration, TimeUnit unit) throws InterruptedException;
 
 	@Override
 	public ArrayList<ReportData> report() {

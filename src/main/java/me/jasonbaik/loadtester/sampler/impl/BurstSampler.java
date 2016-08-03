@@ -30,10 +30,14 @@ public class BurstSampler extends Sampler<byte[], BurstSamplerConfig> {
 	}
 
 	@Override
-	public void forEach(SamplerTask<byte[]> samplerTask, List<byte[]> payloads) {
+	public void forEach(SamplerTask<byte[]> samplerTask, List<byte[]> payloads) throws InterruptedException {
 		logger.info(getClass().getName() + " will run the task " + getConfig().getBurstCount() + " times in rapid succession");
 
 		for (int i = 0; i < getConfig().getBurstCount(); i++) {
+			if (Thread.currentThread().isInterrupted()) {
+				throw new InterruptedException("Sampling thread interrupted");
+			}
+
 			try {
 				samplerTask.run(i, payloads.get(i % payloads.size()));
 			} catch (Exception e) {
@@ -43,10 +47,14 @@ public class BurstSampler extends Sampler<byte[], BurstSamplerConfig> {
 	}
 
 	@Override
-	public void forEach(SamplerTask<byte[]> samplerTask, PayloadIterator<byte[]> iterator) {
+	public void forEach(SamplerTask<byte[]> samplerTask, PayloadIterator<byte[]> iterator) throws InterruptedException {
 		logger.info(getClass().getName() + " will run the task " + getConfig().getBurstCount() + " times in rapid succession");
 
 		for (int i = 0; i < getConfig().getBurstCount(); i++) {
+			if (Thread.currentThread().isInterrupted()) {
+				throw new InterruptedException("Sampling thread interrupted");
+			}
+
 			try {
 				samplerTask.run(i, iterator.next());
 			} catch (Exception e) {
@@ -56,16 +64,16 @@ public class BurstSampler extends Sampler<byte[], BurstSamplerConfig> {
 	}
 
 	@Override
-	public void during(SamplerTask<byte[]> sampleTask, List<byte[]> payloads, long duration, TimeUnit unit) {
+	public void during(SamplerTask<byte[]> sampleTask, List<byte[]> payloads, long duration, TimeUnit unit) throws InterruptedException {
 		executeBursts(new BurstRunnable(sampleTask, payloads, System.nanoTime() + TimeUnit.NANOSECONDS.convert(duration, unit)), duration, unit);
 	}
 
 	@Override
-	public void during(SamplerTask<byte[]> sampleTask, PayloadIterator<byte[]> payloadGenerator, long duration, TimeUnit unit) {
+	public void during(SamplerTask<byte[]> sampleTask, PayloadIterator<byte[]> payloadGenerator, long duration, TimeUnit unit) throws InterruptedException {
 		executeBursts(new BurstRunnable(sampleTask, payloadGenerator, System.nanoTime() + TimeUnit.NANOSECONDS.convert(duration, unit)), duration, unit);
 	}
 
-	private void executeBursts(BurstRunnable burstRunnable, long duration, TimeUnit unit) {
+	private void executeBursts(BurstRunnable burstRunnable, long duration, TimeUnit unit) throws InterruptedException {
 		logger.info(getClass().getName() + " will run the task every " + getConfig().getBurstInterval() + " " + getConfig().getBurstIntervalUnit() + " for " + duration + " " + unit);
 
 		es = Executors.newSingleThreadScheduledExecutor();
@@ -77,7 +85,7 @@ public class BurstSampler extends Sampler<byte[], BurstSamplerConfig> {
 			try {
 				terminated = es.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
 			} catch (InterruptedException e) {
-				logger.error(e);
+				throw new InterruptedException("Burst executor interrupted");
 			}
 		}
 	}
@@ -109,12 +117,15 @@ public class BurstSampler extends Sampler<byte[], BurstSamplerConfig> {
 				return;
 			}
 
-			if (this.payloadGenerator != null) {
-				BurstSampler.this.forEach(task, payloadGenerator);
-			} else if (this.payloads != null) {
-				BurstSampler.this.forEach(task, payloads);
+			try {
+				if (this.payloadGenerator != null) {
+					BurstSampler.this.forEach(task, payloadGenerator);
+				} else if (this.payloads != null) {
+					BurstSampler.this.forEach(task, payloads);
+				}
+			} catch (InterruptedException e) {
+				logger.warn("Burst executor interrupted", e);
 			}
-
 		}
 
 	}

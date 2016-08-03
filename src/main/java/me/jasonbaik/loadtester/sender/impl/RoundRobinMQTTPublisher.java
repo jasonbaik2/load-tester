@@ -79,6 +79,7 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 
 		@Override
 		public void onPublish(UTF8Buffer topic, Buffer body, Runnable ack) {
+			getRepliedCount().incrementAndGet();
 			log(topic, body);
 			ack.run();
 		}
@@ -103,6 +104,7 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 
 		@Override
 		public void onPublish(UTF8Buffer topic, Buffer body, Callback<Callback<Void>> ack) {
+			getRepliedCount().incrementAndGet();
 			log(topic, body);
 			ack.onSuccess(null);
 		}
@@ -123,6 +125,20 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 
 	};
 
+	private Callback<Void> publishCallback = new Callback<Void>() {
+
+		@Override
+		public void onSuccess(Void value) {
+			getSuccessCount().incrementAndGet();
+		}
+
+		@Override
+		public void onFailure(Throwable value) {
+			getFailureCount().incrementAndGet();
+		}
+
+	};
+
 	public RoundRobinMQTTPublisher(RoundRobinMQTTPublisherConfig config) {
 		super(config);
 		// TODO Auto-generated constructor stub
@@ -135,7 +151,10 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 		connections = Collections.synchronizedList(new ArrayList<CallbackConnection>(getConfig().getNumConnections()));
 		tracers = Collections.synchronizedList(new ArrayList<MQTTFlightTracer>(getConfig().getNumConnections()));
 		connectionLatch = new CountDownLatch(getConfig().getNumConnections());
+	}
 
+	@Override
+	protected void connect() throws Exception {
 		logger.info("Initiating " + getConfig().getNumConnections() + " connections with a step size of " + getConfig().getConnectionStepSize() + " and a step interval of "
 				+ getConfig().getConnectionStepIntervalMilli() + "ms...");
 
@@ -179,7 +198,7 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 		String connectionId = uuid + "-" + (cIndex);
 
 		logger.debug("Publishing a message using the client #" + cIndex);
-		connections.get(cIndex).publish(getConfig().getTopic(), Payload.toBytes(connectionId, index, payload), getConfig().getQos(), false, null);
+		connections.get(cIndex).publish(getConfig().getTopic(), Payload.toBytes(connectionId, index, payload), getConfig().getQos(), false, publishCallback);
 		getPublishedCount().incrementAndGet();
 	}
 
@@ -213,7 +232,8 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 
 	@Override
 	public void log() {
-		System.out.print("Published: ");
+		System.out.print(getState());
+		System.out.print("\tPublished: ");
 		System.out.print(getPublishedCount());
 		System.out.print(", Replied: ");
 		System.out.print(getRepliedCount());
@@ -221,9 +241,6 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 		System.out.print(getSuccessCount());
 		System.out.print(", Failed: ");
 		System.out.print(getFailureCount());
-		System.out.print(" (");
-		System.out.print(isPubDone() ? "Pub Done" : "Publishing");
-		System.out.print(")");
 		System.out.print("\n");
 	}
 

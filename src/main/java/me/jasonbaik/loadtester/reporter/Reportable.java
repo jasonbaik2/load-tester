@@ -6,4 +6,6 @@ public interface Reportable<T> {
 
 	public ArrayList<T> report() throws InterruptedException;
 
+	public void destroy() throws Exception;
+
 }
