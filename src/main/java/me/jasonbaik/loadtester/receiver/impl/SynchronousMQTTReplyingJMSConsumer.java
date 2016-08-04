@@ -5,9 +5,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -51,7 +53,7 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 	private MessageConsumer consumer;
 	private Map<String, Long> inTimes = Collections.synchronizedMap(new HashMap<String, Long>());
 
-	private FutureConnection mqttConn;
+	private BlockingQueue<FutureConnection> mqttConns;
 	private MQTTFlightTracer tracer = new MQTTFlightTracer();
 
 	private AtomicInteger dequeueCount = new AtomicInteger();
@@ -60,7 +62,7 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 	private AtomicInteger failureCount = new AtomicInteger();
 
 	private volatile ExecutorService replyService;
-	private BlockingQueue<BytesMessage> outboundMessages;
+	private BlockingQueue<BytesMessage> replyMessages;
 
 	public SynchronousMQTTReplyingJMSConsumer(SynchronousMQTTReplyingJMSConsumerConfig config) {
 		super(config);
@@ -77,25 +79,35 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 
 		logger.info("Successfully established a JMS connection");
 
-		MQTT client = new MQTT();
-		client.setHost(MQTTClientFactory.getFusesourceConnectionUrl(broker, getConfig().isSsl()));
-		client.setClientId(uuid);
-		client.setCleanSession(getConfig().isCleanSession());
-		client.setUserName(broker.getUsername());
-		client.setPassword(broker.getPassword());
-		client.setKeepAlive((short) 0);
-		client.setSslContext(SSLUtil.createSSLContext(getConfig().getKeyStore(), getConfig().getKeyStorePassword(), getConfig().getTrustStore(), getConfig().getTrustStorePassword()));
-		client.setTracer(tracer);
+		mqttConns = new ArrayBlockingQueue<FutureConnection>(getConfig().getNumMQTTConnections());
+		List<Future<Void>> connFutures = new ArrayList<Future<Void>>(getConfig().getNumMQTTConnections());
 
-		mqttConn = client.futureConnection();
+		for (int i = 0; i < getConfig().getNumMQTTConnections(); i++) {
+			MQTT client = new MQTT();
+			client.setHost(MQTTClientFactory.getFusesourceConnectionUrl(broker, getConfig().isSsl()));
+			client.setClientId(uuid + "-" + i);
+			client.setCleanSession(getConfig().isCleanSession());
+			client.setUserName(broker.getUsername());
+			client.setPassword(broker.getPassword());
+			client.setKeepAlive((short) 0);
+			client.setSslContext(SSLUtil.createSSLContext(getConfig().getKeyStore(), getConfig().getKeyStorePassword(), getConfig().getTrustStore(), getConfig().getTrustStorePassword()));
+			client.setTracer(tracer);
 
-		Future<Void> future = mqttConn.connect();
-		future.await();
+			FutureConnection mqttConn = client.futureConnection();
+			Future<Void> future = mqttConn.connect();
+			connFutures.add(future);
 
-		logger.info("Successfully established an MQTT connection");
+			mqttConns.put(mqttConn);
+		}
+
+		for (int i = 0; i < getConfig().getNumMQTTConnections(); i++) {
+			connFutures.get(i).await();
+		}
+
+		logger.info("Successfully established reply " + getConfig().getNumMQTTConnections() + " MQTT connection");
 
 		replyService = Executors.newFixedThreadPool(getConfig().getNumReplyThreads());
-		outboundMessages = new LinkedBlockingQueue<BytesMessage>();
+		replyMessages = new LinkedBlockingQueue<BytesMessage>();
 	}
 
 	@Override
@@ -104,14 +116,19 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 		conn.close();
 
 		logger.info("Disconnecting MQTT connection");
-		mqttConn.kill();
+
+		for (FutureConnection conn : mqttConns) {
+			conn.kill();
+		}
+
+		mqttConns.clear();
 
 		if (replyService != null) {
 			replyService.shutdownNow();
 		}
 
-		if (outboundMessages != null) {
-			outboundMessages.clear();
+		if (replyMessages != null) {
+			replyMessages.clear();
 		}
 	}
 
@@ -126,7 +143,7 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 			public void run() {
 				while (true) {
 					try {
-						BytesMessage message = outboundMessages.take();
+						BytesMessage message = replyMessages.take();
 						byte[] payload = new byte[(int) message.getBodyLength()];
 						message.readBytes(payload);
 
@@ -135,6 +152,7 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 
 						logger.debug("Publishing a reply to the MQTT client uuid=" + mqttReplyTopic);
 
+						FutureConnection mqttConn = mqttConns.take();
 						Future<Void> future = mqttConn.publish(mqttReplyTopic, payload, getConfig().getQos(), false);
 						publishedCount.incrementAndGet();
 
@@ -146,6 +164,8 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 							logger.error("Failed to publish a reply", e);
 							failureCount.incrementAndGet();
 						}
+
+						mqttConns.put(mqttConn); // Return the client to the pool
 
 						inTimes.put(Payload.extractUniqueId(payload), message.getLongProperty(StringConstants.JMSACTIVEMQBROKERINTIME));
 
@@ -166,7 +186,7 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 
 		if (message instanceof BytesMessage) {
 			BytesMessage bytesMessage = (BytesMessage) message;
-			outboundMessages.add(bytesMessage);
+			replyMessages.add(bytesMessage);
 			dequeueCount.incrementAndGet();
 		} else {
 			throw new IllegalArgumentException();
