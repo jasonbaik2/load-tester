@@ -64,6 +64,7 @@
 		<property name="trustStore" value="keystore/client.ks" />
 		<property name="trustStorePassword" value="password" />
 		<property name="qos" value="EXACTLY_ONCE" />
+		<property name="numReplyThreads" value="5" />
 	</bean>
 
 	<util:list id="scenarios" value-type="me.jasonbaik.loadtester.valueobject.Scenario">

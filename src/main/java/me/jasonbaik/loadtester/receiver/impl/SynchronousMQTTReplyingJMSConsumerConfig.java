@@ -22,6 +22,8 @@ public class SynchronousMQTTReplyingJMSConsumerConfig extends ReceiverConfig<Syn
 	private String trustStore;
 	private String trustStorePassword;
 
+	private int numReplyThreads = 1;
+
 	@Override
 	public Class<SynchronousMQTTReplyingJMSConsumer> getReceiverClass() {
 		return SynchronousMQTTReplyingJMSConsumer.class;
@@ -99,10 +101,18 @@ public class SynchronousMQTTReplyingJMSConsumerConfig extends ReceiverConfig<Syn
 		this.ssl = ssl;
 	}
 
+	public int getNumReplyThreads() {
+		return numReplyThreads;
+	}
+
+	public void setNumReplyThreads(int numReplyThreads) {
+		this.numReplyThreads = numReplyThreads;
+	}
+
 	@Override
 	public String toString() {
 		return "SynchronousMQTTReplyingJMSConsumerConfig [brokers=" + brokers + ", ssl=" + ssl + ", queue=" + queue + ", cleanSession=" + cleanSession + ", qos=" + qos + ", keyStore=" + keyStore
-				+ ", trustStore=" + trustStore + "]";
+				+ ", keyStorePassword=" + keyStorePassword + ", trustStore=" + trustStore + ", trustStorePassword=" + trustStorePassword + ", numReplyThreads=" + numReplyThreads + "]";
 	}
 
 }

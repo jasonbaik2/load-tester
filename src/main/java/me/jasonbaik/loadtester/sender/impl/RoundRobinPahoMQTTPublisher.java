@@ -295,7 +295,7 @@ public class RoundRobinPahoMQTTPublisher extends AbstractRoundRobinMQTTPublisher
 	@Override
 	public void destroy() throws MqttException {
 		for (MqttAsyncClient client : clients) {
-			client.disconnect();
+			client.disconnectForcibly();
 		}
 
 		clients.clear();

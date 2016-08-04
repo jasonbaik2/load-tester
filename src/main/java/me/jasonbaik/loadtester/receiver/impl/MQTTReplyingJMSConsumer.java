@@ -136,7 +136,7 @@ public class MQTTReplyingJMSConsumer extends Receiver<MQTTReplyingJMSConsumerCon
 		conn.close();
 
 		logger.info("Disconnecting MQTT connection");
-		mqttConn.disconnect(null);
+		mqttConn.kill(null);
 	}
 
 	@Override

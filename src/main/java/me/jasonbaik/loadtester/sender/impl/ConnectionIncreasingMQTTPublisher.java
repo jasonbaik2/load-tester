@@ -338,7 +338,7 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 
 			synchronized (activeConnections) {
 				for (Pair<String, CallbackConnection> conn : activeConnections) {
-					conn.value.disconnect(null);
+					conn.value.kill(null);
 				}
 			}
 		}

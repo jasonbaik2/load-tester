@@ -223,7 +223,7 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 	@Override
 	public void destroy() {
 		for (CallbackConnection conn : connections) {
-			conn.disconnect(null);
+			conn.kill(null);
 		}
 
 		connections.clear();

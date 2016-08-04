@@ -181,7 +181,7 @@ public class Client<S1, S2, R1> extends Node {
 		}
 
 		if (statusService != null) {
-			statusService.shutdown();
+			statusService.shutdownNow();
 		}
 	}
 

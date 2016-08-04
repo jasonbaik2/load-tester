@@ -8,6 +8,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
@@ -49,9 +54,13 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 	private FutureConnection mqttConn;
 	private MQTTFlightTracer tracer = new MQTTFlightTracer();
 
-	private volatile int publishedCount;
-	private volatile int successCount;
-	private volatile int failureCount;
+	private AtomicInteger dequeueCount = new AtomicInteger();
+	private AtomicInteger publishedCount = new AtomicInteger();
+	private AtomicInteger successCount = new AtomicInteger();
+	private AtomicInteger failureCount = new AtomicInteger();
+
+	private volatile ExecutorService replyService;
+	private BlockingQueue<BytesMessage> outboundMessages;
 
 	public SynchronousMQTTReplyingJMSConsumer(SynchronousMQTTReplyingJMSConsumerConfig config) {
 		super(config);
@@ -84,6 +93,9 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 		future.await();
 
 		logger.info("Successfully established an MQTT connection");
+
+		replyService = Executors.newFixedThreadPool(getConfig().getNumReplyThreads());
+		outboundMessages = new LinkedBlockingQueue<BytesMessage>();
 	}
 
 	@Override
@@ -92,47 +104,70 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 		conn.close();
 
 		logger.info("Disconnecting MQTT connection");
-		mqttConn.disconnect();
+		mqttConn.kill();
+
+		if (replyService != null) {
+			replyService.shutdownNow();
+		}
+
+		if (outboundMessages != null) {
+			outboundMessages.clear();
+		}
 	}
 
 	@Override
 	public void receive() throws JMSException {
 		consumer.setMessageListener(this);
 		conn.start();
+
+		replyService.execute(new Runnable() {
+
+			@Override
+			public void run() {
+				while (true) {
+					try {
+						BytesMessage message = outboundMessages.take();
+						byte[] payload = new byte[(int) message.getBodyLength()];
+						message.readBytes(payload);
+
+						String[] idPair = Payload.extractIdPair(payload);
+						String mqttReplyTopic = idPair[0];
+
+						logger.debug("Publishing a reply to the MQTT client uuid=" + mqttReplyTopic);
+
+						Future<Void> future = mqttConn.publish(mqttReplyTopic, payload, getConfig().getQos(), false);
+						publishedCount.incrementAndGet();
+
+						try {
+							future.await();
+							successCount.incrementAndGet();
+
+						} catch (Exception e) {
+							logger.error("Failed to publish a reply", e);
+							failureCount.incrementAndGet();
+						}
+
+						inTimes.put(Payload.extractUniqueId(payload), message.getLongProperty(StringConstants.JMSACTIVEMQBROKERINTIME));
+
+					} catch (JMSException e) {
+						logger.error("Failed to reply", e);
+
+					} catch (InterruptedException e) {
+						logger.error("Interrupted", e);
+					}
+				}
+			}
+
+		});
 	}
 
 	@Override
-	public synchronized void onMessage(Message message) {
+	public void onMessage(Message message) {
 
 		if (message instanceof BytesMessage) {
 			BytesMessage bytesMessage = (BytesMessage) message;
-
-			try {
-				byte[] payload = new byte[(int) bytesMessage.getBodyLength()];
-				bytesMessage.readBytes(payload);
-
-				String[] idPair = Payload.extractIdPair(payload);
-				String mqttReplyTopic = idPair[0];
-
-				logger.debug("Publishing a reply to the MQTT client uuid=" + mqttReplyTopic);
-
-				Future<Void> future = mqttConn.publish(mqttReplyTopic, payload, getConfig().getQos(), false);
-				publishedCount++;
-
-				try {
-					future.await();
-					successCount++;
-
-				} catch (Exception e) {
-					logger.error("Failed to publish a reply", e);
-					failureCount++;
-				}
-
-				inTimes.put(Payload.extractUniqueId(payload), message.getLongProperty(StringConstants.JMSACTIVEMQBROKERINTIME));
-
-			} catch (JMSException e) {
-				throw new IllegalArgumentException();
-			}
+			outboundMessages.add(bytesMessage);
+			dequeueCount.incrementAndGet();
 		} else {
 			throw new IllegalArgumentException();
 		}
@@ -157,7 +192,9 @@ public class SynchronousMQTTReplyingJMSConsumer extends Receiver<SynchronousMQTT
 
 	@Override
 	public void log() {
-		System.out.print("Published: ");
+		System.out.print("Dequeued: ");
+		System.out.print(dequeueCount);
+		System.out.print(", Published: ");
 		System.out.print(publishedCount);
 		System.out.print(", Success: ");
 		System.out.print(successCount);

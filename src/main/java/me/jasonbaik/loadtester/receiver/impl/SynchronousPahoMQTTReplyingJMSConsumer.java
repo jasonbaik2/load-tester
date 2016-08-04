@@ -167,7 +167,7 @@ public class SynchronousPahoMQTTReplyingJMSConsumer extends Receiver<Synchronous
 		session.close();
 		conn.close();
 
-		mqttClient.disconnect();
+		mqttClient.disconnectForcibly();
 	}
 
 	@Override
