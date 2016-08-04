@@ -22,6 +22,7 @@ public abstract class AbstractMQTTReplyingJMSConsumerConfig<T extends AbstractMQ
 	private String trustStore;
 	private String trustStorePassword;
 
+	private int numJMSConnections = 1;
 	private int numMQTTConnections = 1;
 	private int numReplyThreads = 1;
 
@@ -113,11 +114,19 @@ public abstract class AbstractMQTTReplyingJMSConsumerConfig<T extends AbstractMQ
 		this.numMQTTConnections = numMQTTConnections;
 	}
 
+	public int getNumJMSConnections() {
+		return numJMSConnections;
+	}
+
+	public void setNumJMSConnections(int numJMSConnections) {
+		this.numJMSConnections = numJMSConnections;
+	}
+
 	@Override
 	public String toString() {
-		return "SynchronousMQTTReplyingJMSConsumerConfig [brokers=" + brokers + ", ssl=" + ssl + ", queue=" + queue + ", cleanSession=" + cleanSession + ", qos=" + qos + ", keyStore=" + keyStore
-				+ ", keyStorePassword=" + keyStorePassword + ", trustStore=" + trustStore + ", trustStorePassword=" + trustStorePassword + ", numMQTTConnections=" + numMQTTConnections
-				+ ", numReplyThreads=" + numReplyThreads + "]";
+		return "AbstractMQTTReplyingJMSConsumerConfig [brokers=" + brokers + ", ssl=" + ssl + ", queue=" + queue + ", cleanSession=" + cleanSession + ", qos=" + qos + ", keyStore=" + keyStore
+				+ ", keyStorePassword=" + keyStorePassword + ", trustStore=" + trustStore + ", trustStorePassword=" + trustStorePassword + ", numJMSConnections=" + numJMSConnections
+				+ ", numMQTTConnections=" + numMQTTConnections + ", numReplyThreads=" + numReplyThreads + "]";
 	}
 
 }

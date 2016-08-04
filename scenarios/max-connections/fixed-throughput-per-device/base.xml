@@ -60,6 +60,7 @@
 		<property name="trustStore" value="keystore/client.ks" />
 		<property name="trustStorePassword" value="password" />
 		<property name="qos" value="EXACTLY_ONCE" />
+		<property name="numJMSConnections" value="5" />
 		<property name="numMQTTConnections" value="5" />
 		<property name="numReplyThreads" value="5" />
 	</bean>

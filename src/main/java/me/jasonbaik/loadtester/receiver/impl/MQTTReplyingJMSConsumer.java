@@ -2,6 +2,7 @@ package me.jasonbaik.loadtester.receiver.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -22,6 +23,7 @@ public class MQTTReplyingJMSConsumer extends AbstractMQTTReplyingJMSConsumer<MQT
 
 	private static final Logger logger = LogManager.getLogger(MQTTReplyingJMSConsumer.class);
 
+	private String mqttUuid = UUID.randomUUID().toString();
 	private List<CallbackConnection> mqttConns;
 	private AtomicInteger connIndex = new AtomicInteger();
 	private CountDownLatch connectionLatch;
@@ -68,7 +70,7 @@ public class MQTTReplyingJMSConsumer extends AbstractMQTTReplyingJMSConsumer<MQT
 		for (int i = 0; i < getConfig().getNumMQTTConnections(); i++) {
 			MQTT client = new MQTT();
 			client.setHost(MQTTClientFactory.getFusesourceConnectionUrl(broker, getConfig().isSsl()));
-			client.setClientId(getUuid() + "-" + i);
+			client.setClientId(mqttUuid + "-" + i);
 			client.setCleanSession(getConfig().isCleanSession());
 			client.setUserName(broker.getUsername());
 			client.setPassword(broker.getPassword());

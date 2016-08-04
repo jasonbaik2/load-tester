@@ -105,7 +105,7 @@ public class Client<S1, S2, R1> extends Node {
 					logger.warn("Attack interrupted", e);
 
 				} catch (Exception e) {
-					logger.error(e);
+					logger.error("Error", e);
 
 					try {
 						sendCommand(owningControllerQueue.get(), Command.ERROR, e.getMessage() != null ? e.getMessage().getBytes() : null);

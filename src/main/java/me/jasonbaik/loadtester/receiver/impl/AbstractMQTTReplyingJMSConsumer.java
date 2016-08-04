@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
@@ -19,7 +20,6 @@ import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 import javax.jms.Message;
-import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
 import javax.jms.Session;
 
@@ -31,7 +31,7 @@ import me.jasonbaik.loadtester.valueobject.Payload;
 import me.jasonbaik.loadtester.valueobject.Protocol;
 import me.jasonbaik.loadtester.valueobject.ReportData;
 
-import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.ActiveMQConnection;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -41,9 +41,7 @@ public abstract class AbstractMQTTReplyingJMSConsumer<T extends AbstractMQTTRepl
 
 	private String uuid = UUID.randomUUID().toString();
 	private ConnectionFactory connFactory;
-	private Connection conn;
-	private Session session;
-	private MessageConsumer consumer;
+	private List<Connection> conns;
 	private Map<String, Long> inTimes = Collections.synchronizedMap(new HashMap<String, Long>());
 
 	private MQTTFlightTracer tracer = new MQTTFlightTracer();
@@ -62,24 +60,29 @@ public abstract class AbstractMQTTReplyingJMSConsumer<T extends AbstractMQTTRepl
 
 	@Override
 	public void init() throws Exception {
-		setState("Initializing");
+		replyService = Executors.newFixedThreadPool(getConfig().getNumReplyThreads());
+		replyMessages = new LinkedBlockingQueue<BytesMessage>();
+
+		logger.info("Initializing JMS connections");
 
 		Broker broker = getConfig().getBrokers().get(0);
 
-		connFactory = new ActiveMQConnectionFactory(broker.getUsername(), broker.getPassword(), "tcp://" + broker.getHostname() + ":" + broker.getConnectors().get(Protocol.JMS).getPort());
-		conn = connFactory.createConnection();
-		session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-		consumer = session.createConsumer(session.createQueue(getConfig().getQueue()));
+		conns = new ArrayList<Connection>(getConfig().getNumJMSConnections());
 
-		logger.info("Successfully established a JMS connection");
+		for (int i = 0; i < getConfig().getNumJMSConnections(); i++) {
+			Connection conn = ActiveMQConnection.makeConnection(broker.getUsername(), broker.getPassword(), "tcp://" + broker.getHostname() + ":" + broker.getConnectors().get(Protocol.JMS).getPort());
+			conn.setClientID(uuid + "-" + i);
+			Session session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
+			session.createConsumer(session.createQueue(getConfig().getQueue())).setMessageListener(this);
+			conns.add(conn);
+		}
+
+		logger.info("Successfully established " + getConfig().getNumJMSConnections() + " JMS connections");
 
 		setState("Initializing MQTT Connections");
 		initMQTTConnections();
 
-		logger.info("Successfully established reply " + getConfig().getNumMQTTConnections() + " MQTT connection");
-
-		replyService = Executors.newFixedThreadPool(getConfig().getNumReplyThreads());
-		replyMessages = new LinkedBlockingQueue<BytesMessage>();
+		logger.info("Successfully established reply " + getConfig().getNumMQTTConnections() + " MQTT connections");
 	}
 
 	@Override
@@ -95,8 +98,14 @@ public abstract class AbstractMQTTReplyingJMSConsumer<T extends AbstractMQTTRepl
 		logger.info("Disconnecting MQTT connection");
 		destroyMQTTConnections();
 
-		logger.info("Closing JMS connection");
-		conn.close();
+		logger.info("Closing JMS connections");
+
+		for (Connection c : conns) {
+			c.close();
+		}
+
+		conns.clear();
+
 	}
 
 	protected abstract void initMQTTConnections() throws Exception;
@@ -107,10 +116,11 @@ public abstract class AbstractMQTTReplyingJMSConsumer<T extends AbstractMQTTRepl
 
 	@Override
 	public void receive() throws JMSException {
-		setState("Receiving/Replying");
+		for (Connection c : conns) {
+			c.start();
+		}
 
-		consumer.setMessageListener(this);
-		conn.start();
+		setState("Receiving/Replying");
 
 		replyService.execute(new Runnable() {
 
@@ -183,44 +193,12 @@ public abstract class AbstractMQTTReplyingJMSConsumer<T extends AbstractMQTTRepl
 		System.out.print("\n");
 	}
 
-	public String getUuid() {
-		return uuid;
-	}
-
-	public void setUuid(String uuid) {
-		this.uuid = uuid;
-	}
-
 	public ConnectionFactory getConnFactory() {
 		return connFactory;
 	}
 
 	public void setConnFactory(ConnectionFactory connFactory) {
 		this.connFactory = connFactory;
-	}
-
-	public Connection getConn() {
-		return conn;
-	}
-
-	public void setConn(Connection conn) {
-		this.conn = conn;
-	}
-
-	public Session getSession() {
-		return session;
-	}
-
-	public void setSession(Session session) {
-		this.session = session;
-	}
-
-	public MessageConsumer getConsumer() {
-		return consumer;
-	}
-
-	public void setConsumer(MessageConsumer consumer) {
-		this.consumer = consumer;
 	}
 
 	public Map<String, Long> getInTimes() {

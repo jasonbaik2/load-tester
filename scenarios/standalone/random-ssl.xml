@@ -65,6 +65,7 @@
 		<property name="trustStorePassword" value="password" />
 		<property name="qos" value="EXACTLY_ONCE" />
 		<property name="cleanSession" value="true" />
+		<property name="numJMSConnections" value="5" />
 		<property name="numMQTTConnections" value="5" />
 		<property name="numReplyThreads" value="5" />
 	</bean>

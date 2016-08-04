@@ -2,6 +2,7 @@ package me.jasonbaik.loadtester.receiver.impl;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -21,6 +22,7 @@ public class SynchronousMQTTReplyingJMSConsumer extends AbstractMQTTReplyingJMSC
 
 	private static final Logger logger = LogManager.getLogger(SynchronousMQTTReplyingJMSConsumer.class);
 
+	private String mqttUuid = UUID.randomUUID().toString();
 	private BlockingQueue<FutureConnection> mqttConns;
 
 	public SynchronousMQTTReplyingJMSConsumer(SynchronousMQTTReplyingJMSConsumerConfig config) {
@@ -37,7 +39,7 @@ public class SynchronousMQTTReplyingJMSConsumer extends AbstractMQTTReplyingJMSC
 		for (int i = 0; i < getConfig().getNumMQTTConnections(); i++) {
 			MQTT client = new MQTT();
 			client.setHost(MQTTClientFactory.getFusesourceConnectionUrl(broker, getConfig().isSsl()));
-			client.setClientId(getUuid() + "-" + i);
+			client.setClientId(mqttUuid + "-" + i);
 			client.setCleanSession(getConfig().isCleanSession());
 			client.setUserName(broker.getUsername());
 			client.setPassword(broker.getPassword());
