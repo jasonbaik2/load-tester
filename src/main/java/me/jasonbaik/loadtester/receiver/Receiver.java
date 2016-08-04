@@ -7,6 +7,7 @@ import me.jasonbaik.loadtester.valueobject.ReportData;
 public abstract class Receiver<T extends ReceiverConfig<?>> implements Reportable<ReportData>, Loggable {
 
 	private T config;
+	private volatile String state;
 
 	public Receiver(T config) {
 		this.config = config;
@@ -24,6 +25,14 @@ public abstract class Receiver<T extends ReceiverConfig<?>> implements Reportabl
 
 	public void setConfig(T config) {
 		this.config = config;
+	}
+
+	public String getState() {
+		return state;
+	}
+
+	public void setState(String state) {
+		this.state = state;
 	}
 
 }

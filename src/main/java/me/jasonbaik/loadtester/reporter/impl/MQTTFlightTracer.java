@@ -1,16 +1,19 @@
-package me.jasonbaik.loadtester.util;
+package me.jasonbaik.loadtester.reporter.impl;
 
 import java.io.IOException;
 import java.net.ProtocolException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import me.jasonbaik.loadtester.reporter.Reportable;
 import me.jasonbaik.loadtester.valueobject.MQTTFlightData;
 import me.jasonbaik.loadtester.valueobject.Payload;
+import me.jasonbaik.loadtester.valueobject.ReportData;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,7 +25,7 @@ import org.fusesource.mqtt.codec.PUBLISH;
 import org.fusesource.mqtt.codec.PUBREC;
 import org.fusesource.mqtt.codec.PUBREL;
 
-public class MQTTFlightTracer extends Tracer {
+public class MQTTFlightTracer extends Tracer implements Reportable<ReportData> {
 
 	private static final Logger logger = LogManager.getLogger(MQTTFlightTracer.class);
 
@@ -213,6 +216,16 @@ public class MQTTFlightTracer extends Tracer {
 		}
 
 		return sb.toString().getBytes();
+	}
+
+	@Override
+	public ArrayList<ReportData> report() throws InterruptedException {
+		return new ArrayList<ReportData>(Arrays.asList(new ReportData[] { new ReportData("MQTT_Flight_Data.csv", toCsv(getFlightData())) }));
+	}
+
+	@Override
+	public void destroy() throws Exception {
+		this.flightStats.clear();
 	}
 
 }

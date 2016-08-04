@@ -10,7 +10,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import me.jasonbaik.loadtester.client.MQTTClientFactory;
-import me.jasonbaik.loadtester.util.MQTTFlightTracer;
+import me.jasonbaik.loadtester.reporter.impl.MQTTFlightTracer;
 import me.jasonbaik.loadtester.util.SSLUtil;
 import me.jasonbaik.loadtester.valueobject.Broker;
 import me.jasonbaik.loadtester.valueobject.MQTTFlightData;
@@ -221,12 +221,17 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 	}
 
 	@Override
-	public void destroy() {
+	public void destroy() throws Exception {
 		for (CallbackConnection conn : connections) {
 			conn.kill(null);
 		}
 
 		connections.clear();
+
+		for (MQTTFlightTracer t : tracers) {
+			t.destroy();
+		}
+
 		tracers.clear();
 	}
 

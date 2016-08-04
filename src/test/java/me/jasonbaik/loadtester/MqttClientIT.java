@@ -2,7 +2,7 @@ package me.jasonbaik.loadtester;
 
 import java.net.URISyntaxException;
 
-import me.jasonbaik.loadtester.util.MQTTFlightTracer;
+import me.jasonbaik.loadtester.reporter.impl.MQTTFlightTracer;
 
 import org.fusesource.mqtt.client.Callback;
 import org.fusesource.mqtt.client.CallbackConnection;

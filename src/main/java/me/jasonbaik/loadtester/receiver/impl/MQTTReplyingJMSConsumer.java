@@ -1,71 +1,55 @@
 package me.jasonbaik.loadtester.receiver.impl;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.UUID;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.jms.BytesMessage;
-import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
-import javax.jms.JMSException;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
 import javax.jms.MessageListener;
-import javax.jms.Session;
 
 import me.jasonbaik.loadtester.client.MQTTClientFactory;
-import me.jasonbaik.loadtester.constant.StringConstants;
-import me.jasonbaik.loadtester.receiver.Receiver;
-import me.jasonbaik.loadtester.util.MQTTFlightTracer;
 import me.jasonbaik.loadtester.util.SSLUtil;
 import me.jasonbaik.loadtester.valueobject.Broker;
-import me.jasonbaik.loadtester.valueobject.Payload;
-import me.jasonbaik.loadtester.valueobject.Protocol;
-import me.jasonbaik.loadtester.valueobject.ReportData;
 
-import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.fusesource.mqtt.client.Callback;
 import org.fusesource.mqtt.client.CallbackConnection;
 import org.fusesource.mqtt.client.MQTT;
 
-public class MQTTReplyingJMSConsumer extends Receiver<MQTTReplyingJMSConsumerConfig> implements MessageListener {
+public class MQTTReplyingJMSConsumer extends AbstractMQTTReplyingJMSConsumer<MQTTReplyingJMSConsumerConfig> implements MessageListener {
 
 	private static final Logger logger = LogManager.getLogger(MQTTReplyingJMSConsumer.class);
 
-	private String uuid = UUID.randomUUID().toString();
-	private ConnectionFactory connFactory;
-	private Connection conn;
-	private Session session;
-	private MessageConsumer consumer;
-	private Map<String, Long> inTimes = Collections.synchronizedMap(new HashMap<String, Long>());
+	private List<CallbackConnection> mqttConns;
+	private AtomicInteger connIndex = new AtomicInteger();
+	private CountDownLatch connectionLatch;
 
-	private CallbackConnection mqttConn;
-	private MQTTFlightTracer tracer = new MQTTFlightTracer();
+	private Callback<Void> connectCallback = new Callback<Void>() {
 
-	private AtomicInteger publishedCount = new AtomicInteger();
-	private AtomicInteger successCount = new AtomicInteger();
-	private AtomicInteger failureCount = new AtomicInteger();
+		@Override
+		public void onSuccess(Void value) {
+			connectionLatch.countDown();
+		}
+
+		@Override
+		public void onFailure(Throwable value) {
+			logger.error("Error", value);
+		}
+
+	};
 
 	private Callback<Void> publishCallback = new Callback<Void>() {
 
 		@Override
 		public void onSuccess(Void value) {
-			successCount.incrementAndGet();
+			getSuccessCount().incrementAndGet();
 		}
 
 		@Override
 		public void onFailure(Throwable value) {
-			failureCount.incrementAndGet();
+			getFailureCount().incrementAndGet();
 		}
 
 	};
@@ -75,129 +59,49 @@ public class MQTTReplyingJMSConsumer extends Receiver<MQTTReplyingJMSConsumerCon
 	}
 
 	@Override
-	public void init() throws Exception {
+	protected void initMQTTConnections() throws Exception {
 		Broker broker = getConfig().getBrokers().get(0);
 
-		connFactory = new ActiveMQConnectionFactory(broker.getUsername(), broker.getPassword(), "tcp://" + broker.getHostname() + ":" + broker.getConnectors().get(Protocol.JMS).getPort());
-		conn = connFactory.createConnection();
-		session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
-		consumer = session.createConsumer(session.createQueue(getConfig().getQueue()));
+		mqttConns = new ArrayList<CallbackConnection>(getConfig().getNumMQTTConnections());
+		connectionLatch = new CountDownLatch(getConfig().getNumMQTTConnections());
 
-		logger.info("Successfully established a JMS connection");
+		for (int i = 0; i < getConfig().getNumMQTTConnections(); i++) {
+			MQTT client = new MQTT();
+			client.setHost(MQTTClientFactory.getFusesourceConnectionUrl(broker, getConfig().isSsl()));
+			client.setClientId(getUuid() + "-" + i);
+			client.setCleanSession(getConfig().isCleanSession());
+			client.setUserName(broker.getUsername());
+			client.setPassword(broker.getPassword());
+			client.setKeepAlive((short) 0);
+			client.setSslContext(SSLUtil.createSSLContext(getConfig().getKeyStore(), getConfig().getKeyStorePassword(), getConfig().getTrustStore(), getConfig().getTrustStorePassword()));
+			client.setTracer(getTracer());
 
-		MQTT client = new MQTT();
-		client.setHost(MQTTClientFactory.getFusesourceConnectionUrl(broker, getConfig().isSsl()));
-		client.setClientId(uuid);
-		client.setCleanSession(getConfig().isCleanSession());
-		client.setUserName(broker.getUsername());
-		client.setPassword(broker.getPassword());
-		client.setKeepAlive((short) 0);
-		client.setSslContext(SSLUtil.createSSLContext(getConfig().getKeyStore(), getConfig().getKeyStorePassword(), getConfig().getTrustStore(), getConfig().getTrustStorePassword()));
-		client.setTracer(tracer);
+			CallbackConnection mqttConn = client.callbackConnection();
+			mqttConn.connect(connectCallback);
+			mqttConns.add(mqttConn);
+		}
 
-		mqttConn = client.callbackConnection();
-
-		final CountDownLatch latch = new CountDownLatch(1);
-		final AtomicBoolean success = new AtomicBoolean();
-
-		mqttConn.connect(new Callback<Void>() {
-
-			@Override
-			public void onSuccess(Void value) {
-				success.set(true);
-
-				if (success.get()) {
-					latch.countDown();
-				}
-			}
-
-			@Override
-			public void onFailure(Throwable value) {
-				success.set(false);
-
-				if (!success.get()) {
-					latch.countDown();
-				}
-			}
-		});
-
-		latch.await();
-
-		if (success.get()) {
-			logger.info("Successfully established an MQTT connection");
-		} else {
-			throw new Exception("Failed to establish an MQTT connection");
+		while (connectionLatch.getCount() != 0) {
+			setState("Waiting for " + connectionLatch.getCount() + " more connections to initialize");
+			connectionLatch.await(10, TimeUnit.SECONDS);
 		}
 	}
 
 	@Override
-	public void destroy() throws JMSException {
-		logger.info("Closing JMS connection");
-		conn.close();
-
+	protected void destroyMQTTConnections() {
 		logger.info("Disconnecting MQTT connection");
-		mqttConn.kill(null);
-	}
 
-	@Override
-	public void receive() throws JMSException {
-		consumer.setMessageListener(this);
-		conn.start();
-	}
-
-	@Override
-	public void onMessage(Message message) {
-		if (message instanceof BytesMessage) {
-			BytesMessage bytesMessage = (BytesMessage) message;
-
-			try {
-				byte[] payload = new byte[(int) bytesMessage.getBodyLength()];
-				bytesMessage.readBytes(payload);
-
-				String[] idPair = Payload.extractIdPair(payload);
-				String mqttReplyTopic = idPair[0];
-
-				logger.debug("Publishing a reply to the MQTT client uuid=" + mqttReplyTopic);
-
-				mqttConn.publish(mqttReplyTopic, payload, getConfig().getQos(), false, publishCallback);
-				publishedCount.incrementAndGet();
-
-				inTimes.put(Payload.extractUniqueId(payload), message.getLongProperty(StringConstants.JMSACTIVEMQBROKERINTIME));
-
-			} catch (JMSException e) {
-				throw new IllegalArgumentException();
-			}
-		} else {
-			throw new IllegalArgumentException();
-		}
-	}
-
-	@Override
-	public ArrayList<ReportData> report() throws InterruptedException {
-		byte[] mqttFlightData = MQTTFlightTracer.toCsv(tracer.getFlightData());
-
-		StringBuilder sb = new StringBuilder("MessageId,").append(StringConstants.JMSACTIVEMQBROKERINTIME).append("\n");
-
-		synchronized (inTimes) {
-			for (Iterator<Entry<String, Long>> iter = inTimes.entrySet().iterator(); iter.hasNext();) {
-				Entry<String, Long> entry = iter.next();
-				sb.append(entry.getKey()).append(",").append(entry.getValue()).append("\n");
-			}
+		for (CallbackConnection c : mqttConns) {
+			c.kill(null);
 		}
 
-		return new ArrayList<ReportData>(Arrays.asList(new ReportData[] { new ReportData("SynchronousMQTTReplyingJMSConsumer_MQTT_Flight_Data.csv", mqttFlightData),
-				new ReportData("MQTTReplyingJMSConsumer_JMS_In_Times.csv", sb.toString().getBytes()) }));
+		mqttConns.clear();
 	}
 
 	@Override
-	public void log() {
-		System.out.print("Published: ");
-		System.out.print(publishedCount);
-		System.out.print(", Success: ");
-		System.out.print(successCount);
-		System.out.print(", Failed: ");
-		System.out.print(failureCount);
-		System.out.print("\n");
+	protected void reply(byte[] payload, String mqttReplyTopic) throws InterruptedException {
+		mqttConns.get(connIndex.getAndIncrement() % mqttConns.size()).publish(mqttReplyTopic, payload, getConfig().getQos(), false, publishCallback);
+		getPublishedCount().incrementAndGet();
 	}
 
 }

@@ -15,9 +15,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import me.jasonbaik.loadtester.client.MQTTClientFactory;
 import me.jasonbaik.loadtester.reporter.impl.ConnectionStatReporter;
+import me.jasonbaik.loadtester.reporter.impl.MQTTFlightTracer;
 import me.jasonbaik.loadtester.sampler.Sampler;
 import me.jasonbaik.loadtester.sender.Sender;
-import me.jasonbaik.loadtester.util.MQTTFlightTracer;
 import me.jasonbaik.loadtester.util.RandomXmlGenerator;
 import me.jasonbaik.loadtester.util.SSLUtil;
 import me.jasonbaik.loadtester.valueobject.Broker;
@@ -367,9 +367,11 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 			}
 		}
 
-		if (tracers != null) {
-			tracers.clear();
+		for (MQTTFlightTracer t : tracers) {
+			t.destroy();
 		}
+
+		tracers.clear();
 
 		if (connectionStatReporter != null) {
 			connectionStatReporter.destroy();

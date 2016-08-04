@@ -58,7 +58,7 @@
 		<property name="intervalUnit" value="MILLISECONDS" />
 	</bean>
 
-	<bean id="receiverConfig" class="me.jasonbaik.loadtester.receiver.impl.SynchronousMQTTReplyingJMSConsumerConfig">
+	<bean id="receiverConfig" class="me.jasonbaik.loadtester.receiver.impl.MQTTReplyingJMSConsumerConfig">
 		<property name="brokers" ref="brokers" />
 		<property name="ssl" value="false" />
 		<property name="queue" value="mqtt.attack.queue" />
