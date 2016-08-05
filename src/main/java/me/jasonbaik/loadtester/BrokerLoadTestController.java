@@ -84,7 +84,11 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 							logger.error("Failed to run the scenario=" + currentScenario, e);
 
 						} finally {
-							releaseClients();
+							try {
+								releaseClients();
+							} catch (Exception e) {
+								logger.error("Failed to release clients. The clients might have lapsed into inconsistent state. Please check manually", e);
+							}
 
 							if (!promptForRerun()) {
 								break;

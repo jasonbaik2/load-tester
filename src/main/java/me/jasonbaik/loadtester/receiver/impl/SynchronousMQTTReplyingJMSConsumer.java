@@ -1,6 +1,8 @@
 package me.jasonbaik.loadtester.receiver.impl;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -9,8 +11,10 @@ import java.util.concurrent.BlockingQueue;
 import javax.jms.MessageListener;
 
 import me.jasonbaik.loadtester.client.MQTTClientFactory;
+import me.jasonbaik.loadtester.reporter.impl.MQTTFlightTracer;
 import me.jasonbaik.loadtester.util.SSLUtil;
 import me.jasonbaik.loadtester.valueobject.Broker;
+import me.jasonbaik.loadtester.valueobject.MQTTFlightData;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -24,6 +28,7 @@ public class SynchronousMQTTReplyingJMSConsumer extends AbstractMQTTReplyingJMSC
 
 	private String mqttUuid = UUID.randomUUID().toString();
 	private BlockingQueue<FutureConnection> mqttConns;
+	private List<MQTTFlightTracer> tracers;
 
 	public SynchronousMQTTReplyingJMSConsumer(SynchronousMQTTReplyingJMSConsumerConfig config) {
 		super(config);
@@ -34,6 +39,8 @@ public class SynchronousMQTTReplyingJMSConsumer extends AbstractMQTTReplyingJMSC
 		Broker broker = getConfig().getBrokers().get(0);
 
 		mqttConns = new ArrayBlockingQueue<FutureConnection>(getConfig().getNumMQTTConnections());
+		tracers = new ArrayList<MQTTFlightTracer>(getConfig().getNumMQTTConnections());
+
 		List<Future<Void>> connFutures = new ArrayList<Future<Void>>(getConfig().getNumMQTTConnections());
 
 		for (int i = 0; i < getConfig().getNumMQTTConnections(); i++) {
@@ -45,7 +52,10 @@ public class SynchronousMQTTReplyingJMSConsumer extends AbstractMQTTReplyingJMSC
 			client.setPassword(broker.getPassword());
 			client.setKeepAlive((short) 0);
 			client.setSslContext(SSLUtil.createSSLContext(getConfig().getKeyStore(), getConfig().getKeyStorePassword(), getConfig().getTrustStore(), getConfig().getTrustStorePassword()));
-			client.setTracer(getTracer());
+
+			MQTTFlightTracer tracer = new MQTTFlightTracer();
+			client.setTracer(tracer);
+			tracers.add(tracer);
 
 			FutureConnection mqttConn = client.futureConnection();
 			Future<Void> future = mqttConn.connect();
@@ -55,7 +65,7 @@ public class SynchronousMQTTReplyingJMSConsumer extends AbstractMQTTReplyingJMSC
 		}
 
 		for (int i = 0; i < getConfig().getNumMQTTConnections(); i++) {
-			setState("Waiting on MQTT Connection #" + i);
+			logger.info("Waiting on MQTT Connection #" + i);
 			connFutures.get(i).await();
 		}
 	}
@@ -85,6 +95,17 @@ public class SynchronousMQTTReplyingJMSConsumer extends AbstractMQTTReplyingJMSC
 		}
 
 		mqttConns.put(mqttConn); // Return the client to the pool
+	}
+
+	@Override
+	protected Collection<MQTTFlightData> collectFlightData() {
+		List<MQTTFlightData> flightData = new LinkedList<MQTTFlightData>();
+
+		for (MQTTFlightTracer tracer : this.tracers) {
+			flightData.addAll(tracer.getFlightData());
+		}
+
+		return flightData;
 	}
 
 }

@@ -5,20 +5,7 @@
        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
 
-	<util:map id="connectors">
-		<entry key="MQTT">
-			<bean class="me.jasonbaik.loadtester.valueobject.Connector">
-				<property name="protocol" value="MQTT" />
-				<property name="port" value="1883" />
-			</bean>
-		</entry>
-		<entry key="JMS">
-			<bean class="me.jasonbaik.loadtester.valueobject.Connector">
-				<property name="protocol" value="JMS" />
-				<property name="port" value="61616" />
-			</bean>
-		</entry>
-	</util:map>
+	<import resource="base.xml" />
 
 	<util:list id="brokers" value-type="me.jasonbaik.loadtester.valueobject.Broker">
 		<bean class="me.jasonbaik.loadtester.valueobject.Broker">
@@ -37,44 +24,9 @@
 		</bean>
 	</util:list>
 
-	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.RoundRobinMQTTPublisherConfig">
-		<property name="brokers" ref="brokers" />
-		<property name="ssl" value="true" />
-		<property name="keyStore" value="keystore/client.ks" />
-		<property name="keyStorePassword" value="password" />
-		<property name="trustStore" value="keystore/client.ks" />
-		<property name="trustStorePassword" value="password" />
-		<property name="duration" value="15" />
-		<property name="durationUnit" value="MINUTES" />
-		<property name="numConnections" value="5000" />
-		<property name="messagePoolSize" value="5000" />
-		<property name="messageByteLength" value="1024" />
-		<property name="qos" value="EXACTLY_ONCE" />
-		<property name="cleanSession" value="true" />
-		<property name="keepAliveIntervalMilli" value="0" />
-		<property name="connectionStepSize" value="1000" />
-		<property name="connectionStepIntervalMilli" value="10000" />
-		<property name="topic" value="mqtt/attack" />
-	</bean>
-
 	<bean id="samplerConfig" class="me.jasonbaik.loadtester.sampler.impl.RandomSamplerConfig">
 		<property name="expectedInterval" value="12" />
 		<property name="expectedIntervalUnit" value="MILLISECONDS" />
-	</bean>
-
-	<bean id="receiverConfig" class="me.jasonbaik.loadtester.receiver.impl.SynchronousMQTTReplyingJMSConsumerConfig">
-		<property name="brokers" ref="brokers" />
-		<property name="ssl" value="true" />
-		<property name="queue" value="mqtt.attack.queue" />
-		<property name="keyStore" value="keystore/client.ks" />
-		<property name="keyStorePassword" value="password" />
-		<property name="trustStore" value="keystore/client.ks" />
-		<property name="trustStorePassword" value="password" />
-		<property name="qos" value="EXACTLY_ONCE" />
-		<property name="cleanSession" value="true" />
-		<property name="numJMSConnections" value="5" />
-		<property name="numMQTTConnections" value="5" />
-		<property name="numReplyThreads" value="5" />
 	</bean>
 
 	<util:list id="scenarios" value-type="me.jasonbaik.loadtester.valueobject.Scenario">
@@ -84,36 +36,6 @@
 			<property name="sends" ref="sends" />
 			<property name="receives" ref="receives" />
 			<property name="reportDir" value="report" />
-		</bean>
-	</util:list>
-
-	<util:list id="sends" value-type="me.jasonbaik.loadtester.valueobject.Send">
-		<bean class="me.jasonbaik.loadtester.valueobject.Send">
-			<property name="name" value="send1" />
-			<property name="samplerConfig" ref="samplerConfig" />
-			<property name="senderConfig" ref="senderConfig" />
-		</bean>
-		<bean class="me.jasonbaik.loadtester.valueobject.Send">
-			<property name="name" value="send2" />
-			<property name="samplerConfig" ref="samplerConfig" />
-			<property name="senderConfig" ref="senderConfig" />
-		</bean>
-		<bean class="me.jasonbaik.loadtester.valueobject.Send">
-			<property name="name" value="send3" />
-			<property name="samplerConfig" ref="samplerConfig" />
-			<property name="senderConfig" ref="senderConfig" />
-		</bean>
-		<bean class="me.jasonbaik.loadtester.valueobject.Send">
-			<property name="name" value="send4" />
-			<property name="samplerConfig" ref="samplerConfig" />
-			<property name="senderConfig" ref="senderConfig" />
-		</bean>
-	</util:list>
-
-	<util:list id="receives" value-type="me.jasonbaik.loadtester.valueobject.Receive">
-		<bean class="me.jasonbaik.loadtester.valueobject.Receive">
-			<property name="name" value="receive1" />
-			<property name="receiverConfig" ref="receiverConfig" />
 		</bean>
 	</util:list>
 

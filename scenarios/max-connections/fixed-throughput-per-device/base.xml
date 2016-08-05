@@ -51,7 +51,7 @@
 		<property name="durationUnit" value="MINUTES" />
 	</bean>
 
-	<bean id="receiverConfig" class="me.jasonbaik.loadtester.receiver.impl.SynchronousMQTTReplyingJMSConsumerConfig">
+	<bean id="receiverConfig" class="me.jasonbaik.loadtester.receiver.impl.MQTTReplyingJMSConsumerConfig">
 		<property name="brokers" ref="brokers" />
 		<property name="ssl" value="false" />
 		<property name="queue" value="mqtt.attack.queue" />
@@ -60,8 +60,8 @@
 		<property name="trustStore" value="keystore/client.ks" />
 		<property name="trustStorePassword" value="password" />
 		<property name="qos" value="EXACTLY_ONCE" />
-		<property name="numJMSConnections" value="5" />
-		<property name="numMQTTConnections" value="5" />
+		<property name="numJMSConnections" value="25" />
+		<property name="numMQTTConnections" value="500" />
 		<property name="numReplyThreads" value="5" />
 	</bean>
 
@@ -110,6 +110,16 @@
 		<bean class="me.jasonbaik.loadtester.valueobject.Receive">
 			<property name="name" value="receive4" />
 			<property name="receiverConfig" ref="receiverConfig" />
+		</bean>
+		<bean class="me.jasonbaik.loadtester.valueobject.Receive">
+			<property name="name" value="BrokerThreadCountCollector" />
+			<property name="receiverConfig">
+				<bean class="me.jasonbaik.loadtester.receiver.impl.BrokerThreadCountCollectorConfig">
+					<property name="brokers" ref="brokers" />
+					<property name="collectInterval" value="1" />
+					<property name="collectIntervalUnit" value="MILLISECONDS" />
+				</bean>
+			</property>
 		</bean>
 	</util:list>
 

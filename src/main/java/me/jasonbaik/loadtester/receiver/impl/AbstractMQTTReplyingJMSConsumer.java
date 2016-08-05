@@ -2,6 +2,7 @@ package me.jasonbaik.loadtester.receiver.impl;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -17,7 +18,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.jms.BytesMessage;
 import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 import javax.jms.Message;
 import javax.jms.MessageListener;
@@ -27,11 +27,12 @@ import me.jasonbaik.loadtester.constant.StringConstants;
 import me.jasonbaik.loadtester.receiver.Receiver;
 import me.jasonbaik.loadtester.reporter.impl.MQTTFlightTracer;
 import me.jasonbaik.loadtester.valueobject.Broker;
+import me.jasonbaik.loadtester.valueobject.MQTTFlightData;
 import me.jasonbaik.loadtester.valueobject.Payload;
 import me.jasonbaik.loadtester.valueobject.Protocol;
 import me.jasonbaik.loadtester.valueobject.ReportData;
 
-import org.apache.activemq.ActiveMQConnection;
+import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,11 +41,9 @@ public abstract class AbstractMQTTReplyingJMSConsumer<T extends AbstractMQTTRepl
 	private static final Logger logger = LogManager.getLogger(AbstractMQTTReplyingJMSConsumer.class);
 
 	private String uuid = UUID.randomUUID().toString();
-	private ConnectionFactory connFactory;
+	private ActiveMQConnectionFactory connFactory;
 	private List<Connection> conns;
 	private Map<String, Long> inTimes = Collections.synchronizedMap(new HashMap<String, Long>());
-
-	private MQTTFlightTracer tracer = new MQTTFlightTracer();
 
 	private AtomicInteger dequeueCount = new AtomicInteger();
 	private AtomicInteger publishedCount = new AtomicInteger();
@@ -67,10 +66,13 @@ public abstract class AbstractMQTTReplyingJMSConsumer<T extends AbstractMQTTRepl
 
 		Broker broker = getConfig().getBrokers().get(0);
 
+		connFactory = new ActiveMQConnectionFactory(broker.getUsername(), broker.getPassword(), "tcp://" + broker.getHostname() + ":" + broker.getConnectors().get(Protocol.JMS).getPort());
+		connFactory.setAlwaysSessionAsync(false);
+
 		conns = new ArrayList<Connection>(getConfig().getNumJMSConnections());
 
 		for (int i = 0; i < getConfig().getNumJMSConnections(); i++) {
-			Connection conn = ActiveMQConnection.makeConnection(broker.getUsername(), broker.getPassword(), "tcp://" + broker.getHostname() + ":" + broker.getConnectors().get(Protocol.JMS).getPort());
+			Connection conn = connFactory.createConnection();
 			conn.setClientID(uuid + "-" + i);
 			Session session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
 			session.createConsumer(session.createQueue(getConfig().getQueue())).setMessageListener(this);
@@ -114,6 +116,8 @@ public abstract class AbstractMQTTReplyingJMSConsumer<T extends AbstractMQTTRepl
 
 	protected abstract void reply(byte[] payload, String mqttReplyTopic) throws InterruptedException;
 
+	protected abstract Collection<MQTTFlightData> collectFlightData();
+
 	@Override
 	public void receive() throws JMSException {
 		for (Connection c : conns) {
@@ -155,8 +159,7 @@ public abstract class AbstractMQTTReplyingJMSConsumer<T extends AbstractMQTTRepl
 	@Override
 	public void onMessage(Message message) {
 		if (message instanceof BytesMessage) {
-			BytesMessage bytesMessage = (BytesMessage) message;
-			replyMessages.add(bytesMessage);
+			replyMessages.add((BytesMessage) message);
 			dequeueCount.incrementAndGet();
 		} else {
 			throw new IllegalArgumentException();
@@ -174,8 +177,8 @@ public abstract class AbstractMQTTReplyingJMSConsumer<T extends AbstractMQTTRepl
 			}
 		}
 
-		ArrayList<ReportData> data = new ArrayList<ReportData>(Arrays.asList(new ReportData[] { new ReportData("MQTTReplyingJMSConsumer_JMS_In_Times.csv", sb.toString().getBytes()) }));
-		data.addAll(tracer.report());
+		ArrayList<ReportData> data = new ArrayList<ReportData>(Arrays.asList(new ReportData[] { new ReportData("MQTTReplyingJMSConsumer_JMS_In_Times.csv", sb.toString().getBytes()),
+				new ReportData("MQTTReplyingJMSConsumer_JMS_In_Times.csv", MQTTFlightTracer.toCsv(collectFlightData())) }));
 		return data;
 	}
 
@@ -193,28 +196,12 @@ public abstract class AbstractMQTTReplyingJMSConsumer<T extends AbstractMQTTRepl
 		System.out.print("\n");
 	}
 
-	public ConnectionFactory getConnFactory() {
-		return connFactory;
-	}
-
-	public void setConnFactory(ConnectionFactory connFactory) {
-		this.connFactory = connFactory;
-	}
-
 	public Map<String, Long> getInTimes() {
 		return inTimes;
 	}
 
 	public void setInTimes(Map<String, Long> inTimes) {
 		this.inTimes = inTimes;
-	}
-
-	public MQTTFlightTracer getTracer() {
-		return tracer;
-	}
-
-	public void setTracer(MQTTFlightTracer tracer) {
-		this.tracer = tracer;
 	}
 
 	public AtomicInteger getDequeueCount() {
