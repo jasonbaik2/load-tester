@@ -11,8 +11,7 @@ TRUNCATED_KARAF_FILE="$PREFIX"_karaf_trunc.log
 
 echo "Formatting the GC log file $LOG to $GC_FILE and $FULL_GC_FILE"
 
-#tail -n +4 $LOG > $TRUNCATED_KARAF_FILE
-tail -n +0 $LOG > $TRUNCATED_KARAF_FILE
+tail -n +2 $LOG > $TRUNCATED_KARAF_FILE
 sed -i 's/JBossA-MQ:karaf@root> //' $TRUNCATED_KARAF_FILE
 
 echo time,youngBefore,youngAfter,youngTotal,heapBefore,heapAfter,heapTotal,duration > $GC_FILE

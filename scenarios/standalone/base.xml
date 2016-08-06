@@ -98,7 +98,7 @@
 			<property name="receiverConfig">
 				<bean class="me.jasonbaik.loadtester.receiver.impl.BrokerThreadCountCollectorConfig">
 					<property name="brokers" ref="brokers" />
-					<property name="collectInterval" value="1" />
+					<property name="collectInterval" value="10" />
 					<property name="collectIntervalUnit" value="MILLISECONDS" />
 				</bean>
 			</property>

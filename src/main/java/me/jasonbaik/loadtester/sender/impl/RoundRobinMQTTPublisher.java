@@ -216,7 +216,7 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 			sb.append(m).append("\n");
 		}
 
-		return new ArrayList<ReportData>(Arrays.asList(new ReportData[] { new ReportData("RoundRobinMQTTPublisher_MQTT_Flight_Data.csv", MQTTFlightTracer.toCsv(flightData)),
+		return new ArrayList<ReportData>(Arrays.asList(new ReportData[] { new ReportData("MQTT_Flight_Data.csv", MQTTFlightTracer.toCsv(flightData)),
 				new ReportData("Topic_Mismatched_Messages.csv", sb.toString().getBytes()) }));
 	}
 

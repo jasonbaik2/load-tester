@@ -49,7 +49,7 @@ public class BrokerThreadCountCollector extends Receiver<BrokerThreadCountCollec
 		String id;
 		JMXConnector connector;
 		MBeanServerConnection conn;
-		StringBuilder sb = new StringBuilder("Broker ID,time,threadCount");
+		StringBuilder sb = new StringBuilder("Broker_ID,time,threadCount\n");
 	}
 
 	@Override
@@ -123,7 +123,7 @@ public class BrokerThreadCountCollector extends Receiver<BrokerThreadCountCollec
 
 		synchronized (connectors) {
 			for (BrokerJMX b : connectors) {
-				data.add(new ReportData("Broker_Thread_Count_Stats" + b.id + ".csv", b.sb.toString().getBytes()));
+				data.add(new ReportData("Broker_Thread_Count_Stats_" + b.id + ".csv", b.sb.toString().getBytes()));
 			}
 		}
 

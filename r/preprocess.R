@@ -28,14 +28,14 @@ mergeMQTTFlightFiles <- function(files){
   return(mergedData)
 }
 
-mergeFiles <- function(files, column, startTimeEpochMillis){
+mergeFiles <- function(files, column){
   datas = list()
   
   for (i in seq_along(files)) {
     datas[[i]] = read.csv(files[i])
     
     # Adjust the times with respect to the start time
-    datas[[i]][column] = datas[[i]][column] - startTimeEpochMillis
+    datas[[i]][column] = datas[[i]][column]
     
     if (i == 1) {
       mergedData = datas[[i]]

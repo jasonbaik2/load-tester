@@ -363,7 +363,7 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 				}
 			}
 
-			reportDatas.add(new ReportData("RoundRobinMQTTPublisher_MQTT_Flight_Data.csv", MQTTFlightTracer.toCsv(flightData)));
+			reportDatas.add(new ReportData("MQTT_Flight_Data.csv", MQTTFlightTracer.toCsv(flightData)));
 		}
 
 		reportDatas.addAll(connectionStatReporter.report());

@@ -177,8 +177,8 @@ public abstract class AbstractMQTTReplyingJMSConsumer<T extends AbstractMQTTRepl
 			}
 		}
 
-		ArrayList<ReportData> data = new ArrayList<ReportData>(Arrays.asList(new ReportData[] { new ReportData("MQTTReplyingJMSConsumer_JMS_In_Times.csv", sb.toString().getBytes()),
-				new ReportData("MQTTReplyingJMSConsumer_JMS_In_Times.csv", MQTTFlightTracer.toCsv(collectFlightData())) }));
+		ArrayList<ReportData> data = new ArrayList<ReportData>(Arrays.asList(new ReportData[] { new ReportData("JMS_In_Times.csv", sb.toString().getBytes()),
+				new ReportData("MQTT_Flight_Data.csv", MQTTFlightTracer.toCsv(collectFlightData())) }));
 		return data;
 	}
 

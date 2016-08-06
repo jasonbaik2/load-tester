@@ -391,7 +391,7 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 				}
 			}
 
-			reportDatas.add(new ReportData("RoundRobinMQTTPublisher_MQTT_Flight_Data.csv", MQTTFlightTracer.toCsv(flightData)));
+			reportDatas.add(new ReportData("MQTT_Flight_Data.csv", MQTTFlightTracer.toCsv(flightData)));
 		}
 
 		reportDatas.addAll(connectionStatReporter.report());
