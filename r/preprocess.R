@@ -30,7 +30,8 @@ mergeMQTTFlightFiles <- function(files){
 
 mergeFiles <- function(files, column){
   datas = list()
-  
+  mergedData = NULL
+
   for (i in seq_along(files)) {
     datas[[i]] = read.csv(files[i])
     

@@ -193,9 +193,12 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 	}
 
 	private void discoverClients() throws JMSException, InterruptedException {
-		logger.info("The scenario requires " + currentScenario.getSends().size() + " senders and " + currentScenario.getReceives().size() + " receivers");
+		int numSends = currentScenario.getSends() == null ? 0 : currentScenario.getSends().size();
+		int numReceives = currentScenario.getReceives() == null ? 0 : currentScenario.getReceives().size();
 
-		int numClients = currentScenario.getSends().size() + currentScenario.getReceives().size();
+		logger.info("The scenario requires " + numSends + " senders and " + numReceives + " receivers");
+
+		int numClients = numSends + numReceives;
 
 		while (clientQueueMap.size() < numClients) {
 			logger.info("Discovering clients...");
@@ -229,53 +232,57 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 	}
 
 	private void setupClients() throws Exception {
-		logger.info("Setting up sender clients...");
-
 		Iterator<Entry<String, Queue>> clientQueueIter = clientQueueMap.entrySet().iterator();
 
-		for (Send<S1, S2> send : currentScenario.getSends()) {
-			Entry<String, Queue> entry = clientQueueIter.next();
-			send.setClientUUID(entry.getKey());
-			this.sendCommand(entry.getValue(), Command.SETUPSENDER, writeObject(send));
-		}
+		if (currentScenario.getSends() != null) {
+			logger.info("Setting up sender clients...");
 
-		int readySenders = 0;
+			for (Send<S1, S2> send : currentScenario.getSends()) {
+				Entry<String, Queue> entry = clientQueueIter.next();
+				send.setClientUUID(entry.getKey());
+				this.sendCommand(entry.getValue(), Command.SETUPSENDER, writeObject(send));
+			}
 
-		while (readySenders < currentScenario.getSends().size()) {
-			Message msg = clientMessages.take();
-			String clientUUID = msg.getStringProperty(StringConstants.UUID);
-			String replyCommand = msg.getStringProperty(StringConstants.COMMAND);
+			int readySenders = 0;
 
-			if (Command.SETUPACK.name().equals(replyCommand)) {
-				logger.info("Client uuid=" + clientUUID + " set up successfully");
-				readySenders++;
+			while (readySenders < currentScenario.getSends().size()) {
+				Message msg = clientMessages.take();
+				String clientUUID = msg.getStringProperty(StringConstants.UUID);
+				String replyCommand = msg.getStringProperty(StringConstants.COMMAND);
 
-			} else if (Command.ERROR.name().equals(replyCommand)) {
-				throw new Exception("Client uuid=" + clientUUID + " failed during setup. Aborting the test...");
+				if (Command.SETUPACK.name().equals(replyCommand)) {
+					logger.info("Client uuid=" + clientUUID + " set up successfully");
+					readySenders++;
+
+				} else if (Command.ERROR.name().equals(replyCommand)) {
+					throw new Exception("Client uuid=" + clientUUID + " failed during setup. Aborting the test...");
+				}
 			}
 		}
 
-		logger.info("Setting up receiver clients...");
+		if (currentScenario.getReceives() != null) {
+			logger.info("Setting up receiver clients...");
 
-		for (Receive<R1> receive : currentScenario.getReceives()) {
-			Entry<String, Queue> entry = clientQueueIter.next();
-			receive.setClientUUID(entry.getKey());
-			this.sendCommand(entry.getValue(), Command.SETUPRECEIVER, writeObject(receive));
-		}
+			for (Receive<R1> receive : currentScenario.getReceives()) {
+				Entry<String, Queue> entry = clientQueueIter.next();
+				receive.setClientUUID(entry.getKey());
+				this.sendCommand(entry.getValue(), Command.SETUPRECEIVER, writeObject(receive));
+			}
 
-		int readyReceivers = 0;
+			int readyReceivers = 0;
 
-		while (readyReceivers < currentScenario.getReceives().size()) {
-			Message msg = clientMessages.take();
-			String clientUUID = msg.getStringProperty(StringConstants.UUID);
-			String replyCommand = msg.getStringProperty(StringConstants.COMMAND);
+			while (readyReceivers < currentScenario.getReceives().size()) {
+				Message msg = clientMessages.take();
+				String clientUUID = msg.getStringProperty(StringConstants.UUID);
+				String replyCommand = msg.getStringProperty(StringConstants.COMMAND);
 
-			if (Command.SETUPACK.name().equals(replyCommand)) {
-				logger.info("Client uuid=" + clientUUID + " set up successfully");
-				readyReceivers++;
+				if (Command.SETUPACK.name().equals(replyCommand)) {
+					logger.info("Client uuid=" + clientUUID + " set up successfully");
+					readyReceivers++;
 
-			} else if (Command.ERROR.name().equals(replyCommand)) {
-				throw new Exception("Client uuid=" + clientUUID + " failed during setup. Aborting the test...");
+				} else if (Command.ERROR.name().equals(replyCommand)) {
+					throw new Exception("Client uuid=" + clientUUID + " failed during setup. Aborting the test...");
+				}
 			}
 		}
 
@@ -355,48 +362,56 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 
 		FileWriter fw = new FileWriter(dir + "/description.txt");
 
-		fw.write("============================\n");
-		fw.write("Sends\n");
-		fw.write("============================\n");
+		if (currentScenario.getSends() != null) {
+			fw.write("============================\n");
+			fw.write("Sends\n");
+			fw.write("============================\n");
 
-		for (Send<S1, S2> s : currentScenario.getSends()) {
-			fw.write("Client UUID=" + s.getClientUUID());
-			fw.write("\n");
+			for (Send<S1, S2> s : currentScenario.getSends()) {
+				fw.write("Client UUID=" + s.getClientUUID());
+				fw.write("\n");
 
-			if (s.getSamplerConfig() != null) {
-				fw.write("Sampler=" + s.getSamplerConfig().describe());
+				if (s.getSamplerConfig() != null) {
+					fw.write("Sampler=" + s.getSamplerConfig().describe());
+					fw.write("\n");
+				}
+
+				fw.write("Sender=" + s.getSenderConfig().describe());
+				fw.write("\n");
 				fw.write("\n");
 			}
-
-			fw.write("Sender=" + s.getSenderConfig().describe());
-			fw.write("\n");
-			fw.write("\n");
 		}
 
-		fw.write("============================\n");
-		fw.write("Receives\n");
-		fw.write("============================\n");
+		if (currentScenario.getReceives() != null) {
+			fw.write("============================\n");
+			fw.write("Receives\n");
+			fw.write("============================\n");
 
-		for (Receive<R1> r : currentScenario.getReceives()) {
-			fw.write("Client UUID=" + r.getClientUUID());
-			fw.write("\n");
-			fw.write("Receiver=" + r.getReceiverConfig().describe());
-			fw.write("\n");
-			fw.write("\n");
+			for (Receive<R1> r : currentScenario.getReceives()) {
+				fw.write("Client UUID=" + r.getClientUUID());
+				fw.write("\n");
+				fw.write("Receiver=" + r.getReceiverConfig().describe());
+				fw.write("\n");
+				fw.write("\n");
+			}
 		}
 
 		fw.close();
 
-		for (Send<S1, S2> s : currentScenario.getSends()) {
-			String reportDir = dir + "/" + s.getName();
-			new File(reportDir).mkdirs();
-			writeReportData(reportData.get(s.getClientUUID()), reportDir);
+		if (currentScenario.getSends() != null) {
+			for (Send<S1, S2> s : currentScenario.getSends()) {
+				String reportDir = dir + "/" + s.getName();
+				new File(reportDir).mkdirs();
+				writeReportData(reportData.get(s.getClientUUID()), reportDir);
+			}
 		}
 
-		for (Receive<R1> r : currentScenario.getReceives()) {
-			String reportDir = dir + "/" + r.getName();
-			new File(reportDir).mkdirs();
-			writeReportData(reportData.get(r.getClientUUID()), reportDir);
+		if (currentScenario.getReceives() != null) {
+			for (Receive<R1> r : currentScenario.getReceives()) {
+				String reportDir = dir + "/" + r.getName();
+				new File(reportDir).mkdirs();
+				writeReportData(reportData.get(r.getClientUUID()), reportDir);
+			}
 		}
 
 		logger.info("Successfully generated all reports");

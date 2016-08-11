@@ -287,10 +287,13 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 					client.setPassword(broker.getPassword());
 					client.setKeepAlive((short) (getConfig().getKeepAliveIntervalMilli() / 1000));
 
-					try {
-						client.setSslContext(SSLUtil.createSSLContext(getConfig().getKeyStore(), getConfig().getKeyStorePassword(), getConfig().getTrustStore(), getConfig().getTrustStorePassword()));
-					} catch (Exception e) {
-						throw new RuntimeException(e);
+					if (getConfig().isSsl()) {
+						try {
+							client.setSslContext(SSLUtil.createSSLContext(getConfig().getKeyStore(), getConfig().getKeyStorePassword(), getConfig().getTrustStore(), getConfig()
+									.getTrustStorePassword()));
+						} catch (Exception e) {
+							throw new RuntimeException(e);
+						}
 					}
 
 					if (getConfig().isTrace()) {

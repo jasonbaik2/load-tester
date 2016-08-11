@@ -227,12 +227,12 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 							return;
 						}
 
-						connectionService.shutdown();
+						connectionService.shutdownNow();
 						return;
 					}
 				}
 
-				for (int i = 0; i < getConfig().getConnectionStepSize(); i++) {
+				for (int i = 0; i < getConfig().getConnectionStepSize() && i < getConfig().getNumConnections() - numConnectionsInitiated.get(); i++) {
 					MQTT client = new MQTT();
 					Broker broker = getNextBroker();
 
@@ -249,10 +249,13 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 					client.setPassword(broker.getPassword());
 					client.setKeepAlive((short) (getConfig().getKeepAliveIntervalMilli() / 1000));
 
-					try {
-						client.setSslContext(SSLUtil.createSSLContext(getConfig().getKeyStore(), getConfig().getKeyStorePassword(), getConfig().getTrustStore(), getConfig().getTrustStorePassword()));
-					} catch (Exception e) {
-						throw new RuntimeException(e);
+					if (getConfig().isSsl()) {
+						try {
+							client.setSslContext(SSLUtil.createSSLContext(getConfig().getKeyStore(), getConfig().getKeyStorePassword(), getConfig().getTrustStore(), getConfig()
+									.getTrustStorePassword()));
+						} catch (Exception e) {
+							throw new RuntimeException(e);
+						}
 					}
 
 					if (getConfig().isTrace()) {

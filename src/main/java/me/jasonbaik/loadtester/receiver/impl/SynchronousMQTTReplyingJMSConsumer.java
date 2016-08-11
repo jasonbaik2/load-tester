@@ -51,7 +51,10 @@ public class SynchronousMQTTReplyingJMSConsumer extends AbstractMQTTReplyingJMSC
 			client.setUserName(broker.getUsername());
 			client.setPassword(broker.getPassword());
 			client.setKeepAlive((short) 0);
-			client.setSslContext(SSLUtil.createSSLContext(getConfig().getKeyStore(), getConfig().getKeyStorePassword(), getConfig().getTrustStore(), getConfig().getTrustStorePassword()));
+
+			if (getConfig().isSsl()) {
+				client.setSslContext(SSLUtil.createSSLContext(getConfig().getKeyStore(), getConfig().getKeyStorePassword(), getConfig().getTrustStore(), getConfig().getTrustStorePassword()));
+			}
 
 			MQTTFlightTracer tracer = new MQTTFlightTracer();
 			client.setTracer(tracer);

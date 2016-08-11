@@ -1,4 +1,4 @@
-20,000 connections over a 10 min span
-each connection fires a message on establishment
-50 msgs/s through a random connection 
-connections come and go (10 connections every min)
+<managementContext>
+	<managementContext
+		suppressMBean="endpoint=dynamicProducer,endpoint=Consumer,connectionName=*,destinationName=ActiveMQ.Advisory.*" />
+</managementContext> 
