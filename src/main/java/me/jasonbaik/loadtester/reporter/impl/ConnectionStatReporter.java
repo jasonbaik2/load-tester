@@ -29,7 +29,7 @@ public class ConnectionStatReporter implements Reportable<ReportData> {
 	}
 
 	@Override
-	public ArrayList<ReportData> report() throws InterruptedException {
+	public ArrayList<ReportData> report() {
 		StringBuilder sb = new StringBuilder("Connection ID,conn_init,conn_comp,sub_comp\n");
 		ArrayList<ReportData> data = new ArrayList<ReportData>(1);
 
@@ -39,8 +39,8 @@ public class ConnectionStatReporter implements Reportable<ReportData> {
 					for (Iterator<Entry<String, Long>> iter = initTimes.entrySet().iterator(); iter.hasNext();) {
 						Entry<String, Long> e = iter.next();
 						sb.append(e.getKey()).append(",").append(e.getValue()).append(",");
-						sb.append(compTimes.get(e.getKey()) == null ? "" : compTimes.get(e.getKey())).append(",");
-						sb.append(subCompTimes.get(e.getKey()) == null ? "" : subCompTimes.get(e.getKey()));
+						sb.append(compTimes.get(e.getKey()) == null ? "-1" : compTimes.get(e.getKey())).append(",");
+						sb.append(subCompTimes.get(e.getKey()) == null ? "-1" : subCompTimes.get(e.getKey()));
 						sb.append("\n");
 					}
 				}

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ctx="http://www.springframework.org/schema/context" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+	<import resource="base.xml" />
+
+	<bean id="senderConfig" parent="senderConfigBase">
+		<property name="numConnections" value="16000" />
+		<property name="messagePoolSize" value="16000" />
+		<property name="connectionStepSize" value="16000" />
+	</bean>
+
+	<util:list id="scenarios" value-type="me.jasonbaik.loadtester.valueobject.Scenario">
+		<bean class="me.jasonbaik.loadtester.valueobject.Scenario">
+			<property name="name" value="tcp_vs_nio_16000_conn_sub_burst_nio" />
+			<property name="brokers" ref="brokers" />
+			<property name="sends" ref="sends" />
+			<property name="receives" ref="receives" />
+			<property name="reportDir" value="report" />
+		</bean>
+	</util:list>
+
+</beans>

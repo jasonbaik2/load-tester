@@ -84,7 +84,7 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 		MQTT client;
 		CallbackConnection conn;
 
-		private ConnectCallback(MQTT client, CallbackConnection conn) {
+		ConnectCallback(MQTT client, CallbackConnection conn) {
 			super();
 			this.client = client;
 			this.conn = conn;
@@ -112,7 +112,7 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 
 		Pair<String, CallbackConnection> conn;
 
-		public SubscribeCallback(Pair<String, CallbackConnection> conn) {
+		SubscribeCallback(Pair<String, CallbackConnection> conn) {
 			this.conn = conn;
 		}
 

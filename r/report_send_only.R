@@ -48,8 +48,8 @@ report <- function (reportDir, reportFile, sends, receives, threadFiles, gcFiles
   # Set plot ranges
   #########################
   
-  endTimeNanos = max(sendDataSubset$PubTime, sendDataSubset$PubRecReceiveTime, sendDataSubset$PubRelSendTime, sendDataSubset$PubCompReceiveTime, connectionData$conn_init*10^6, connectionData$conn_comp*10^6, connectionData$sub_comp*10^6)
-  
+  endTimeNanos = max(sendDataSubset$PubTime, sendDataSubset$PubRecReceiveTime, sendDataSubset$PubRelSendTime, sendDataSubset$PubCompReceiveTime, connectionData$conn_init*10^6, subset(connectionData$conn_comp*10^6, !is.na(connectionData$conn_comp)), subset(connectionData$sub_comp*10^6, !is.na(connectionData$sub_comp)))
+
   endTime = ceiling(endTimeNanos / 10^9)
   
   avgPeriod = 1
@@ -96,27 +96,27 @@ report <- function (reportDir, reportFile, sends, receives, threadFiles, gcFiles
   #########################
   # Plot Connections
   #########################
-  
+
   connectionDataSuccess = subset(connectionData, !is.na(connectionData$conn_comp & connectionData$conn_comp / 10^3 < xlim[2]))
-  
+
   # Connection count scatter plot
   connectionDataSuccess = connectionDataSuccess[with(connectionDataSuccess, order(conn_comp)),]
   connectionDataSuccess[["count"]] <- vector(length = length(connectionDataSuccess$conn_comp))
   connectionDataSuccess$count[1] = 1
-  
+
   for (i in seq(from=2, to=length(connectionDataSuccess$conn_comp))) {
     connectionDataSuccess$count[i] = connectionDataSuccess$count[i-1] + 1
   }
-  
+
   conn_comp_second = connectionDataSuccess$conn_comp / 10^3
-  
+
   plot(conn_comp_second, format(connectionDataSuccess$count, scientific = FALSE), main="Connection Trends", xaxt = 'n', xlim = xlim, xlab="Second (s)", ylab="# Established Connections", cex = 0.1, pch=3)
   axis(1, at=xMarks, labels=format(xMarks, scientific=FALSE, digits = 0))
   abline(h = max(connectionDataSuccess$count), col="red", cex = 0.1)
   text(xlim[2] * 0.2, max(connectionDataSuccess$count), labels=paste("Completed =", max(connectionDataSuccess$count), "/", length(connectionData$conn_init)), pos=1)
-  
+
   par(new=TRUE)
-  
+
   # Connection count histogram every 1/100 of the test duration
   breakpoint = xlim[2]/50
   h = hist(conn_comp_second, breaks=seq(from = 0, to = xlim[2], by = breakpoint), plot = FALSE)
@@ -124,15 +124,15 @@ report <- function (reportDir, reportFile, sends, receives, threadFiles, gcFiles
   text(h$mids, h$counts, h$counts, adj = c(.5, -.5), col = "blue", cex=0.5)
   countMarks = seq(from=0, to=ceiling(max(h$counts)), by=500)
   axis(4, at=countMarks, labels=format(countMarks, scientific=FALSE))
-  
+
   plotLatencyDistribution((connectionDataSuccess$conn_comp - connectionDataSuccess$conn_init) * 10^6, main = "Connection Latencies (s)")
-  
+
   #########################
   # Plot Subscriptions
   #########################
-  
+
   subscriptionDataSuccess = subset(connectionDataSuccess, !is.na(connectionDataSuccess$sub_comp & connectionDataSuccess$sub_comp / 10^3 < xlim[2]))
-  
+
   # Connection count scatter plot
   subscriptionDataSuccess = subscriptionDataSuccess[with(subscriptionDataSuccess, order(sub_comp)),]
   subscriptionDataSuccess[["subCount"]] <- vector(length = length(subscriptionDataSuccess$sub_comp))
@@ -141,16 +141,16 @@ report <- function (reportDir, reportFile, sends, receives, threadFiles, gcFiles
   for (i in seq(from=2, to=length(subscriptionDataSuccess$sub_comp))) {
     subscriptionDataSuccess$subCount[i] = subscriptionDataSuccess$subCount[i-1] + 1
   }
-  
+
   sub_comp_second = subscriptionDataSuccess$sub_comp / 10^3
-  
+
   plot(sub_comp_second, format(subscriptionDataSuccess$subCount, scientific = FALSE), main="Subscription Trends", xaxt = 'n', xlim = xlim, xlab="Second (s)", ylab="# Established Subscriptions", cex = 0.1, pch=3)
   axis(1, at=xMarks, labels=format(xMarks, scientific=FALSE, digits = 0))
   abline(h = max(subscriptionDataSuccess$subCount), col="red", cex = 0.1)
   text(xlim[2] * 0.2, max(subscriptionDataSuccess$subCount), labels=paste("Completed =", max(subscriptionDataSuccess$subCount), "/", length(connectionDataSuccess$conn_comp)), pos=1)
-  
+
   par(new=TRUE)
-  
+
   # Histogram every 1/100 of the test duration
   breakpoint = xlim[2]/50
   h = hist(sub_comp_second, breaks=seq(from = 0, to = xlim[2], by = breakpoint), plot = FALSE)
@@ -158,9 +158,9 @@ report <- function (reportDir, reportFile, sends, receives, threadFiles, gcFiles
   text(h$mids, h$counts, h$counts, adj = c(.5, -.5), col = "blue", cex=0.5)
   countMarks = seq(from=0, to=ceiling(max(h$counts)), by=500)
   axis(4, at=countMarks, labels=format(countMarks, scientific=FALSE))
-  
+
   plotLatencyDistribution((subscriptionDataSuccess$sub_comp - subscriptionDataSuccess$conn_comp) * 10^6, main = "Subscription Latencies (s)")
-  
+
   #########################
   # Plot Thread Count
   #########################
@@ -179,9 +179,9 @@ report <- function (reportDir, reportFile, sends, receives, threadFiles, gcFiles
   dev.off()
 }
 
-setwd(dir = "E:/repo_git/load-tester/r")
-reportDir = "E:/Documents/blog/mqtt/report/tcp_vs_nio/consistency/tcp_vs_nio_16000_conn_sub_burst_tcp_2016_08_10_23_17_16"
-startTime = "2016-08-10 23:15:32,734"
+setwd(dir = "C:/Users/HCC5fkv/git_repo/load-tester-github/load-tester/r")
+reportDir = "D:/report/tcp_vs_nio_thread_growth_nio_2016_08_13_03_21_54"
+startTime = "2016-08-13 03:19:27,360"
 
 sends = c("send1")#, "send2", "send3", "send4")
 receives = c()#"receive1","receive2","receive3","receive4")

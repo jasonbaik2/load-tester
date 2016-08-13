@@ -1,7 +1,6 @@
 package me.jasonbaik.loadtester.sender.impl;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -10,6 +9,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import me.jasonbaik.loadtester.client.MQTTClientFactory;
+import me.jasonbaik.loadtester.reporter.impl.ConnectionStatReporter;
 import me.jasonbaik.loadtester.reporter.impl.MQTTFlightTracer;
 import me.jasonbaik.loadtester.util.SSLUtil;
 import me.jasonbaik.loadtester.valueobject.Broker;
@@ -37,6 +37,7 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 	private List<CallbackConnection> connections;
 	private List<String> topicMismatchedMsgs = new LinkedList<String>();
 	private List<MQTTFlightTracer> tracers;
+	private ConnectionStatReporter connectionStatReporter = new ConnectionStatReporter();
 
 	class ConnectCallback implements Callback<Void> {
 
@@ -51,7 +52,8 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 
 		@Override
 		public void onSuccess(Void value) {
-			conn.subscribe(new Topic[] { new Topic(client.getClientId().toString(), getConfig().getQos()) }, subscribeCallback);
+			connectionStatReporter.recordConnectionComp(client.getClientId().toString());
+			conn.subscribe(new Topic[] { new Topic(client.getClientId().toString(), getConfig().getQos()) }, new SubscriptionCallback(client.getClientId().toString()));
 		}
 
 		@Override
@@ -61,11 +63,18 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 
 	};
 
-	private Callback<byte[]> subscribeCallback = new Callback<byte[]>() {
+	class SubscriptionCallback implements Callback<byte[]> {
+
+		String connId;
+
+		SubscriptionCallback(String connId) {
+			this.connId = connId;
+		}
 
 		@Override
 		public void onSuccess(byte[] value) {
 			connectionLatch.countDown();
+			connectionStatReporter.recordSubscriptionComp(connId);
 		}
 
 		@Override
@@ -179,7 +188,7 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 			CallbackConnection conn = client.callbackConnection();
 			conn.listener(connectionListener);
 			conn.connect(new ConnectCallback(client, conn));
-
+			connectionStatReporter.recordConnectionInit(client.getClientId().toString());
 			connections.add(conn);
 
 			if (i != 0 && i % getConfig().getConnectionStepSize() == 0) {
@@ -207,6 +216,8 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 
 	@Override
 	public ArrayList<ReportData> report() {
+		ArrayList<ReportData> reportDats = new ArrayList<ReportData>();
+
 		List<MQTTFlightData> flightData = new LinkedList<MQTTFlightData>();
 
 		for (MQTTFlightTracer tracer : this.tracers) {
@@ -219,8 +230,10 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 			sb.append(m).append("\n");
 		}
 
-		return new ArrayList<ReportData>(Arrays.asList(new ReportData[] { new ReportData("MQTT_Flight_Data.csv", MQTTFlightTracer.toCsv(flightData)),
-				new ReportData("Topic_Mismatched_Messages.csv", sb.toString().getBytes()) }));
+		reportDats.add(new ReportData("MQTT_Flight_Data.csv", MQTTFlightTracer.toCsv(flightData)));
+		reportDats.add(new ReportData("Topic_Mismatched_Messages.csv", sb.toString().getBytes()));
+		reportDats.addAll(connectionStatReporter.report());
+		return reportDats;
 	}
 
 	@Override
@@ -236,6 +249,10 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 		}
 
 		tracers.clear();
+
+		if (connectionStatReporter != null) {
+			connectionStatReporter.destroy();
+		}
 	}
 
 	@Override

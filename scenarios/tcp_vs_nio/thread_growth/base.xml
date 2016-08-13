@@ -30,32 +30,24 @@
 		</bean>
 	</util:list>
 
-	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.FixedThroughputPerConnectionMQTTPublisherConfig">
+	<bean id="senderConfigBase" class="me.jasonbaik.loadtester.sender.impl.FixedThroughputPerConnectionMQTTPublisherConfig" abstract="true">
 		<property name="brokers" ref="brokers" />
 		<property name="ssl" value="false" />
 		<property name="trace" value="true" />
-		<property name="keyStore" value="keystore/client.ks" />
-		<property name="keyStorePassword" value="password" />
-		<property name="trustStore" value="keystore/client.ks" />
-		<property name="trustStorePassword" value="password" />
-		<property name="numConnections" value="20000" />
 		<property name="messagePoolSize" value="5000" />
 		<property name="messageByteLength" value="1024" />
-		<property name="messageInterval" value="1" />
-		<property name="messageIntervalUnit" value="MINUTES" />
 		<property name="qos" value="EXACTLY_ONCE" />
 		<property name="keepAliveIntervalMilli" value="0" />
 		<property name="topic" value="mqtt/attack" />
-		<property name="newConnectionInterval" value="60" />
-		<property name="newConnectionIntervalUnit" value="MILLISECONDS" />
-		<property name="connectionStepSize" value="1" />
-		<property name="duration" value="5" />
+		<property name="newConnectionInterval" value="1" />
+		<property name="newConnectionIntervalUnit" value="DAYS" />
+		<property name="duration" value="10" />
 		<property name="durationUnit" value="MINUTES" />
 	</bean>
 
 	<util:list id="scenarios" value-type="me.jasonbaik.loadtester.valueobject.Scenario">
 		<bean class="me.jasonbaik.loadtester.valueobject.Scenario">
-			<property name="name" value="tcp_vs_nio" />
+			<property name="name" value="tcp_vs_nio_thread_growth" />
 			<property name="brokers" ref="brokers" />
 			<property name="sends" ref="sends" />
 			<property name="receives" ref="receives" />
