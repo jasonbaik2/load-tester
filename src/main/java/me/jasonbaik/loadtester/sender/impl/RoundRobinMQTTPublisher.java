@@ -210,7 +210,7 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 		String connectionId = uuid + "-" + (cIndex);
 
 		logger.debug("Publishing a message using the client #" + cIndex);
-		connections.get(cIndex).publish(getConfig().getTopic(), Payload.toBytes(connectionId, index, payload), getConfig().getQos(), false, publishCallback);
+		connections.get(cIndex).publish(getConfig().getTopic(), Payload.toBytes(connectionId, Integer.toString(index), payload), getConfig().getQos(), false, publishCallback);
 		getPublishedCount().incrementAndGet();
 	}
 

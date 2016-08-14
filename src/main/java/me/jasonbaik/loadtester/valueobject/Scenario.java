@@ -3,23 +3,23 @@ package me.jasonbaik.loadtester.valueobject;
 import java.io.Serializable;
 import java.util.List;
 
-public class Scenario<S1, S2, R1> implements Serializable {
+public class Scenario<S1, R1> implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
 	private String name;
 	private List<Broker> brokers;
-	private List<Send<S1, S2>> sends;
+	private List<Send<S1>> sends;
 	private List<Receive<R1>> receives;
 	private long maxAttackTimeSeconds;
 	private String reportDir;
 	private boolean gcBrokers = true;
 
-	public List<Send<S1, S2>> getSends() {
+	public List<Send<S1>> getSends() {
 		return sends;
 	}
 
-	public void setSends(List<Send<S1, S2>> sends) {
+	public void setSends(List<Send<S1>> sends) {
 		this.sends = sends;
 	}
 

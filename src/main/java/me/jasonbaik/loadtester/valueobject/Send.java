@@ -8,13 +8,13 @@ import me.jasonbaik.loadtester.sampler.SamplerConfig;
 import me.jasonbaik.loadtester.sender.Sender;
 import me.jasonbaik.loadtester.sender.SenderConfig;
 
-public class Send<T1, T2> implements Serializable {
+public class Send<T1> implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
 	private String name;
 	private SamplerConfig<Sampler<T1, ?>> samplerConfig;
-	private SenderConfig<Sender<T1, ?>> senderConfig;
+	private SenderConfig<Sender<T1>> senderConfig;
 	private String clientUUID;
 	private List<ReportData> reportData;
 
@@ -26,11 +26,11 @@ public class Send<T1, T2> implements Serializable {
 		this.samplerConfig = samplerConfig;
 	}
 
-	public SenderConfig<Sender<T1, ?>> getSenderConfig() {
+	public SenderConfig<Sender<T1>> getSenderConfig() {
 		return senderConfig;
 	}
 
-	public void setSenderConfig(SenderConfig<Sender<T1, ?>> senderConfig) {
+	public void setSenderConfig(SenderConfig<Sender<T1>> senderConfig) {
 		this.senderConfig = senderConfig;
 	}
 

@@ -24,7 +24,7 @@ import javax.jms.MessageListener;
 import javax.jms.Session;
 
 import me.jasonbaik.loadtester.constant.StringConstants;
-import me.jasonbaik.loadtester.receiver.Receiver;
+import me.jasonbaik.loadtester.receiver.AbstractReceiver;
 import me.jasonbaik.loadtester.reporter.impl.MQTTFlightTracer;
 import me.jasonbaik.loadtester.valueobject.Broker;
 import me.jasonbaik.loadtester.valueobject.MQTTFlightData;
@@ -36,7 +36,7 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public abstract class AbstractMQTTReplyingJMSConsumer<T extends AbstractMQTTReplyingJMSConsumerConfig<?>> extends Receiver<T> implements MessageListener {
+public abstract class AbstractMQTTReplyingJMSConsumer<T extends AbstractMQTTReplyingJMSConsumerConfig<?>> extends AbstractReceiver<T> implements MessageListener {
 
 	private static final Logger logger = LogManager.getLogger(AbstractMQTTReplyingJMSConsumer.class);
 

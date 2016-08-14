@@ -5,26 +5,14 @@ import me.jasonbaik.loadtester.reporter.Reportable;
 import me.jasonbaik.loadtester.sampler.Sampler;
 import me.jasonbaik.loadtester.valueobject.ReportData;
 
-public abstract class Sender<T1, T2 extends SenderConfig<?>> implements Reportable<ReportData>, Loggable {
+public interface Sender<T1> extends Reportable<ReportData>, Loggable {
 
-	private T2 config;
+	public void init() throws Exception;
 
-	public Sender(T2 config) {
-		this.config = config;
-	}
+	public void destroy() throws Exception;
 
-	public abstract void init() throws Exception;
+	public void interrupt() throws Exception;
 
-	public abstract void destroy() throws Exception;
-
-	public abstract void send(Sampler<T1, ?> sampler) throws Exception;
-
-	public T2 getConfig() {
-		return config;
-	}
-
-	public void setConfig(T2 config) {
-		this.config = config;
-	}
+	public void send(Sampler<T1, ?> sampler) throws Exception;
 
 }

@@ -45,7 +45,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.FileSystemResource;
 
-public class BrokerLoadTestController<S1, S2, R1> extends Node {
+public class BrokerLoadTestController<S1, R1> extends Node {
 
 	private static final Logger logger = LogManager.getLogger(BrokerLoadTestController.class);
 
@@ -57,14 +57,14 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 
 	private List<Broker> brokers;
 
-	private Scenario<S1, S2, R1> currentScenario;
+	private Scenario<S1, R1> currentScenario;
 
 	private void start() throws Exception {
 		try {
 			while (true) {
-				List<Scenario<S1, S2, R1>> scenarios = loadScenarios();
+				List<Scenario<S1, R1>> scenarios = loadScenarios();
 
-				for (Scenario<S1, S2, R1> scenario : scenarios) {
+				for (Scenario<S1, R1> scenario : scenarios) {
 					this.currentScenario = scenario;
 
 					while (true) {
@@ -119,7 +119,7 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 		return files;
 	}
 
-	private List<Scenario<S1, S2, R1>> loadScenarios() throws IOException {
+	private List<Scenario<S1, R1>> loadScenarios() throws IOException {
 		File testContextFile = null;
 
 		while (true) {
@@ -237,7 +237,7 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 		if (currentScenario.getSends() != null) {
 			logger.info("Setting up sender clients...");
 
-			for (Send<S1, S2> send : currentScenario.getSends()) {
+			for (Send<S1> send : currentScenario.getSends()) {
 				Entry<String, Queue> entry = clientQueueIter.next();
 				send.setClientUUID(entry.getKey());
 				this.sendCommand(entry.getValue(), Command.SETUPSENDER, writeObject(send));
@@ -367,7 +367,7 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 			fw.write("Sends\n");
 			fw.write("============================\n");
 
-			for (Send<S1, S2> s : currentScenario.getSends()) {
+			for (Send<S1> s : currentScenario.getSends()) {
 				fw.write("Client UUID=" + s.getClientUUID());
 				fw.write("\n");
 
@@ -399,7 +399,7 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 		fw.close();
 
 		if (currentScenario.getSends() != null) {
-			for (Send<S1, S2> s : currentScenario.getSends()) {
+			for (Send<S1> s : currentScenario.getSends()) {
 				String reportDir = dir + "/" + s.getName();
 				new File(reportDir).mkdirs();
 				writeReportData(reportData.get(s.getClientUUID()), reportDir);
@@ -490,7 +490,7 @@ public class BrokerLoadTestController<S1, S2, R1> extends Node {
 		}
 
 		ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext("file:spring/context-controller.xml");
-		BrokerLoadTestController<?, ?, ?> controller = context.getBean(BrokerLoadTestController.class);
+		BrokerLoadTestController<?, ?> controller = context.getBean(BrokerLoadTestController.class);
 		controller.controllerContext = context;
 		controller.start();
 		context.close();

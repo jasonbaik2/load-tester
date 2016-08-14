@@ -18,7 +18,7 @@ import me.jasonbaik.loadtester.reporter.impl.MQTTFlightTracer;
 import me.jasonbaik.loadtester.sampler.PayloadIterator;
 import me.jasonbaik.loadtester.sampler.Sampler;
 import me.jasonbaik.loadtester.sampler.SamplerTask;
-import me.jasonbaik.loadtester.sender.Sender;
+import me.jasonbaik.loadtester.sender.AbstractSender;
 import me.jasonbaik.loadtester.util.RandomXmlGenerator;
 import me.jasonbaik.loadtester.util.SSLUtil;
 import me.jasonbaik.loadtester.valueobject.Broker;
@@ -36,7 +36,7 @@ import org.fusesource.mqtt.client.ExtendedListener;
 import org.fusesource.mqtt.client.MQTT;
 import org.fusesource.mqtt.client.Topic;
 
-public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], ConnectionIncreasingMQTTPublisherConfig> {
+public class ConnectionIncreasingMQTTPublisher extends AbstractSender<byte[], ConnectionIncreasingMQTTPublisherConfig> {
 
 	private static final Logger logger = LogManager.getLogger(ConnectionIncreasingMQTTPublisher.class);
 
@@ -49,8 +49,6 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 	private AtomicInteger failureCount = new AtomicInteger(0);
 	private AtomicInteger repliedCount = new AtomicInteger(0);
 
-	private volatile String state = "Conn/Pub/Sub";
-
 	private AtomicInteger numConnectionsInitiated = new AtomicInteger();
 	private AtomicInteger numConnectionsEstablished = new AtomicInteger();
 	private AtomicInteger numSubscriptionsInitiated = new AtomicInteger();
@@ -58,14 +56,13 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 
 	private int brokerIndex = 0;
 
-	private ScheduledExecutorService statLoggingService;
-	private ScheduledExecutorService connectionService;
+	private volatile ScheduledExecutorService connectionService;
 	private volatile long endTimeMillis = Long.MAX_VALUE;
 
-	private ArrayBlockingQueue<Pair<String, CallbackConnection>> activeConnections;
+	private volatile ArrayBlockingQueue<Pair<String, CallbackConnection>> activeConnections;
 
-	private List<MQTTFlightTracer> tracers;
-	private ConnectionStatReporter connectionStatReporter = new ConnectionStatReporter();
+	private volatile List<MQTTFlightTracer> tracers;
+	private volatile ConnectionStatReporter connectionStatReporter = new ConnectionStatReporter();
 
 	static class Pair<K, V> {
 		public Pair(K key, V value) {
@@ -125,7 +122,7 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 				endTimeMillis = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(getConfig().getDuration(), getConfig().getDurationUnit());
 				logger.info("All " + getConfig().getNumConnections() + " subscriptions have been established. The sender will publish the messages for an additional " + getConfig().getDuration()
 						+ " " + getConfig().getDurationUnit() + ", then terminate");
-				state = "Pub/Sub";
+				setState("Pub/Sub");
 			}
 		}
 
@@ -215,6 +212,8 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 
 	@Override
 	public void send(Sampler<byte[], ?> sampler) throws InterruptedException {
+		setState("Conn/Pub/Sub");
+
 		// Start a thread that periodically creates more connections with the broker(s)
 		connectionService = Executors.newSingleThreadScheduledExecutor();
 		connectionService.scheduleAtFixedRate(new Runnable() {
@@ -285,7 +284,7 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 					logger.debug("Publishing a message using the connection " + conn.key);
 				}
 
-				conn.value.publish(getConfig().getTopic(), Payload.toBytes(conn.key, index, payload), getConfig().getQos(), false, publishCallback);
+				conn.value.publish(getConfig().getTopic(), Payload.toBytes(conn.key, Integer.toString(index), payload), getConfig().getQos(), false, publishCallback);
 				publishedCount.incrementAndGet();
 
 				// Put the connection back into the tail of the blocking queue so it can be reused
@@ -314,7 +313,7 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 
 		});
 
-		state = "Sub";
+		setState("Sub");
 		logger.info("All messages have been published");
 		connectionService.shutdown();
 	}
@@ -325,10 +324,6 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 
 	@Override
 	public void destroy() throws Exception {
-		if (statLoggingService != null) {
-			statLoggingService.shutdown();
-		}
-
 		if (connectionService != null) {
 			connectionService.shutdown();
 
@@ -374,7 +369,7 @@ public class ConnectionIncreasingMQTTPublisher extends Sender<byte[], Connection
 	}
 
 	public void log() {
-		System.out.print(state);
+		System.out.print(getState());
 		System.out.print("\tPublished: ");
 		System.out.print(publishedCount);
 		System.out.print(", Replied: ");

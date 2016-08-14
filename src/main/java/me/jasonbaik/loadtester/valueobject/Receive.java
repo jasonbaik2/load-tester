@@ -13,15 +13,15 @@ public class Receive<T1> implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	private String name;
-	private ReceiverConfig<Receiver<?>> receiverConfig;
+	private ReceiverConfig<Receiver> receiverConfig;
 	private String clientUUID;
 	private List<ReportData> reportData;
 
-	public ReceiverConfig<Receiver<?>> getReceiverConfig() {
+	public ReceiverConfig<Receiver> getReceiverConfig() {
 		return receiverConfig;
 	}
 
-	public void setReceiverConfig(ReceiverConfig<Receiver<?>> receiverConfig) {
+	public void setReceiverConfig(ReceiverConfig<Receiver> receiverConfig) {
 		this.receiverConfig = receiverConfig;
 	}
 

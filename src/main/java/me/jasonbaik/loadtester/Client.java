@@ -37,7 +37,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-public class Client<S1, S2, R1> extends Node {
+public class Client<S1, R1> extends Node {
 
 	private static final Logger logger = LogManager.getLogger(Client.class);
 
@@ -45,9 +45,9 @@ public class Client<S1, S2, R1> extends Node {
 
 	private MessageConsumer clientTopicConsumer;
 
-	private volatile Sender<S1, ?> sender;
+	private volatile Sender<S1> sender;
 	private volatile Sampler<S1, ?> sampler;
-	private volatile Receiver<?> receiver;
+	private volatile Receiver receiver;
 
 	private volatile Thread attackThread;
 
@@ -63,7 +63,7 @@ public class Client<S1, S2, R1> extends Node {
 		logger.info("Successfully initialized the client with uuid=" + getUuid().toString());
 	}
 
-	private void setupSender(Send<S1, S2> send) throws Exception {
+	private void setupSender(Send<S1> send) throws Exception {
 		logger.info("Setting up a sender according to the test config: " + send.toString());
 
 		this.sender = SenderFactory.newInstance(send.getSenderConfig());
@@ -259,8 +259,6 @@ public class Client<S1, S2, R1> extends Node {
 			} catch (JMSException e1) {
 				logger.error(e);
 			}
-
-			owningControllerQueue.set(null);
 		}
 	}
 

@@ -6,25 +6,38 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import me.jasonbaik.loadtester.reporter.Reportable;
 import me.jasonbaik.loadtester.valueobject.ReportData;
 
 public class ConnectionStatReporter implements Reportable<ReportData> {
 
+	private AtomicInteger numConnectionsInitiated = new AtomicInteger();
+	private AtomicInteger numConnectionsEstablished = new AtomicInteger();
+	private AtomicInteger numSubscriptionsInitiated = new AtomicInteger();
+	private AtomicInteger numSubscriptionsEstablished = new AtomicInteger();
+
 	private Map<String, Long> initTimes = Collections.synchronizedMap(new HashMap<String, Long>());
 	private Map<String, Long> compTimes = Collections.synchronizedMap(new HashMap<String, Long>());
 	private Map<String, Long> subCompTimes = Collections.synchronizedMap(new HashMap<String, Long>());
 
 	public void recordConnectionInit(String connectionId) {
+		numConnectionsInitiated.incrementAndGet();
 		initTimes.put(connectionId, System.currentTimeMillis());
 	}
 
 	public void recordConnectionComp(String connectionId) {
+		numConnectionsEstablished.incrementAndGet();
 		compTimes.put(connectionId, System.currentTimeMillis());
 	}
 
+	public void recordSubscriptionInit(String connectionId) {
+		numSubscriptionsInitiated.incrementAndGet();
+	}
+
 	public void recordSubscriptionComp(String connectionId) {
+		numSubscriptionsEstablished.incrementAndGet();
 		subCompTimes.put(connectionId, System.currentTimeMillis());
 	}
 
@@ -62,6 +75,38 @@ public class ConnectionStatReporter implements Reportable<ReportData> {
 		synchronized (subCompTimes) {
 			subCompTimes.clear();
 		}
+	}
+
+	public AtomicInteger getNumConnectionsInitiated() {
+		return numConnectionsInitiated;
+	}
+
+	public void setNumConnectionsInitiated(AtomicInteger numConnectionsInitiated) {
+		this.numConnectionsInitiated = numConnectionsInitiated;
+	}
+
+	public AtomicInteger getNumConnectionsEstablished() {
+		return numConnectionsEstablished;
+	}
+
+	public void setNumConnectionsEstablished(AtomicInteger numConnectionsEstablished) {
+		this.numConnectionsEstablished = numConnectionsEstablished;
+	}
+
+	public AtomicInteger getNumSubscriptionsInitiated() {
+		return numSubscriptionsInitiated;
+	}
+
+	public void setNumSubscriptionsInitiated(AtomicInteger numSubscriptionsInitiated) {
+		this.numSubscriptionsInitiated = numSubscriptionsInitiated;
+	}
+
+	public AtomicInteger getNumSubscriptionsEstablished() {
+		return numSubscriptionsEstablished;
+	}
+
+	public void setNumSubscriptionsEstablished(AtomicInteger numSubscriptionsEstablished) {
+		this.numSubscriptionsEstablished = numSubscriptionsEstablished;
 	}
 
 }

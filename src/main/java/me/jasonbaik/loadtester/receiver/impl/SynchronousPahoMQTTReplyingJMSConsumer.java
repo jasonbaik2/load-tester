@@ -22,7 +22,7 @@ import javax.jms.Session;
 
 import me.jasonbaik.loadtester.client.MQTTClientFactory;
 import me.jasonbaik.loadtester.constant.StringConstants;
-import me.jasonbaik.loadtester.receiver.Receiver;
+import me.jasonbaik.loadtester.receiver.AbstractReceiver;
 import me.jasonbaik.loadtester.valueobject.Broker;
 import me.jasonbaik.loadtester.valueobject.Payload;
 import me.jasonbaik.loadtester.valueobject.Protocol;
@@ -40,7 +40,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttSecurityException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
-public class SynchronousPahoMQTTReplyingJMSConsumer extends Receiver<SynchronousPahoMQTTReplyingJMSConsumerConfig> implements MessageListener {
+public class SynchronousPahoMQTTReplyingJMSConsumer extends AbstractReceiver<SynchronousPahoMQTTReplyingJMSConsumerConfig> implements MessageListener {
 
 	private static final Logger logger = LogManager.getLogger(SynchronousPahoMQTTReplyingJMSConsumer.class);
 

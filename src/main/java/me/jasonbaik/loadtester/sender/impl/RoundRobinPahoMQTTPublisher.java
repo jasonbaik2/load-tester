@@ -240,7 +240,7 @@ public class RoundRobinPahoMQTTPublisher extends AbstractRoundRobinMQTTPublisher
 		String connectionId = uuid + "-" + (cIndex);
 
 		logger.debug("Publishing a message using the client #" + cIndex);
-		clients.get(cIndex).publish(getConfig().getTopic(), Payload.toBytes(connectionId, index, payload), getConfig().getQos(), false, index, publishCallback);
+		clients.get(cIndex).publish(getConfig().getTopic(), Payload.toBytes(connectionId, Integer.toString(index), payload), getConfig().getQos(), false, index, publishCallback);
 		getPublishedCount().incrementAndGet();
 		publishedSeqNums.add(index);
 	}

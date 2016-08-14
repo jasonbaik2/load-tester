@@ -19,7 +19,7 @@ import javax.jms.MessageProducer;
 import javax.jms.Session;
 
 import me.jasonbaik.loadtester.constant.StringConstants;
-import me.jasonbaik.loadtester.receiver.Receiver;
+import me.jasonbaik.loadtester.receiver.AbstractReceiver;
 import me.jasonbaik.loadtester.valueobject.Broker;
 import me.jasonbaik.loadtester.valueobject.Payload;
 import me.jasonbaik.loadtester.valueobject.Protocol;
@@ -29,7 +29,7 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class JMSReplyingJMSConsumer extends Receiver<JMSReplyingJMSConsumerConfig> implements MessageListener {
+public class JMSReplyingJMSConsumer extends AbstractReceiver<JMSReplyingJMSConsumerConfig> implements MessageListener {
 
 	private static final Logger logger = LogManager.getLogger(JMSReplyingJMSConsumer.class);
 

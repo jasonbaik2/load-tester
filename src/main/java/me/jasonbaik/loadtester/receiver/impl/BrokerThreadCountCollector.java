@@ -19,14 +19,14 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
-import me.jasonbaik.loadtester.receiver.Receiver;
+import me.jasonbaik.loadtester.receiver.AbstractReceiver;
 import me.jasonbaik.loadtester.reporter.Reportable;
 import me.jasonbaik.loadtester.valueobject.Broker;
 import me.jasonbaik.loadtester.valueobject.ReportData;
 
 import org.apache.log4j.Logger;
 
-public class BrokerThreadCountCollector extends Receiver<BrokerThreadCountCollectorConfig> implements Reportable<ReportData> {
+public class BrokerThreadCountCollector extends AbstractReceiver<BrokerThreadCountCollectorConfig> implements Reportable<ReportData> {
 
 	private static final Logger logger = Logger.getLogger(BrokerThreadCountCollector.class);
 

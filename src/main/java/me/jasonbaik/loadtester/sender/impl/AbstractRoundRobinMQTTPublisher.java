@@ -7,14 +7,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import me.jasonbaik.loadtester.sampler.PayloadIterator;
 import me.jasonbaik.loadtester.sampler.Sampler;
 import me.jasonbaik.loadtester.sampler.SamplerTask;
-import me.jasonbaik.loadtester.sender.Sender;
+import me.jasonbaik.loadtester.sender.AbstractSender;
 import me.jasonbaik.loadtester.util.RandomXmlGenerator;
 import me.jasonbaik.loadtester.valueobject.Broker;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public abstract class AbstractRoundRobinMQTTPublisher<T extends AbstractRoundRobinMQTTPublisherConfig<? extends AbstractRoundRobinMQTTPublisher<T>>> extends Sender<byte[], T> {
+public abstract class AbstractRoundRobinMQTTPublisher<T extends AbstractRoundRobinMQTTPublisherConfig<? extends AbstractRoundRobinMQTTPublisher<T>>> extends AbstractSender<byte[], T> {
 
 	private static final Logger logger = LogManager.getLogger(AbstractRoundRobinMQTTPublisher.class);
 
@@ -25,8 +25,6 @@ public abstract class AbstractRoundRobinMQTTPublisher<T extends AbstractRoundRob
 	private AtomicInteger successCount = new AtomicInteger(0);
 	private AtomicInteger failureCount = new AtomicInteger(0);
 	private AtomicInteger repliedCount = new AtomicInteger(0);
-
-	private volatile String state = "Connecting";
 
 	private int brokerIndex = 0;
 
@@ -55,7 +53,7 @@ public abstract class AbstractRoundRobinMQTTPublisher<T extends AbstractRoundRob
 		// Establish all connections before publishing
 		connect();
 
-		state = "Publishing";
+		setState("Publishing");
 
 		SamplerTask<byte[]> task = new SamplerTask<byte[]>() {
 
@@ -118,7 +116,7 @@ public abstract class AbstractRoundRobinMQTTPublisher<T extends AbstractRoundRob
 			sampler.forEach(task, payloadIterator);
 		}
 
-		state = "Publish Done";
+		setState("Publish Done");
 	}
 
 	protected abstract void connect() throws Exception;
@@ -179,14 +177,6 @@ public abstract class AbstractRoundRobinMQTTPublisher<T extends AbstractRoundRob
 
 	public void setBrokerIndex(int brokerIndex) {
 		this.brokerIndex = brokerIndex;
-	}
-
-	public String getState() {
-		return state;
-	}
-
-	public void setState(String state) {
-		this.state = state;
 	}
 
 }

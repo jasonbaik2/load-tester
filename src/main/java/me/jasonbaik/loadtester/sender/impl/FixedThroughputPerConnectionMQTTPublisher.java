@@ -17,7 +17,7 @@ import me.jasonbaik.loadtester.client.MQTTClientFactory;
 import me.jasonbaik.loadtester.reporter.impl.ConnectionStatReporter;
 import me.jasonbaik.loadtester.reporter.impl.MQTTFlightTracer;
 import me.jasonbaik.loadtester.sampler.Sampler;
-import me.jasonbaik.loadtester.sender.Sender;
+import me.jasonbaik.loadtester.sender.AbstractSender;
 import me.jasonbaik.loadtester.util.RandomXmlGenerator;
 import me.jasonbaik.loadtester.util.SSLUtil;
 import me.jasonbaik.loadtester.valueobject.Broker;
@@ -35,7 +35,7 @@ import org.fusesource.mqtt.client.ExtendedListener;
 import org.fusesource.mqtt.client.MQTT;
 import org.fusesource.mqtt.client.Topic;
 
-public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], FixedThroughputPerConnectionMQTTPublisherConfig> {
+public class FixedThroughputPerConnectionMQTTPublisher extends AbstractSender<byte[], FixedThroughputPerConnectionMQTTPublisherConfig> {
 
 	private static final Logger logger = LogManager.getLogger(FixedThroughputPerConnectionMQTTPublisher.class);
 
@@ -48,8 +48,6 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 	private AtomicInteger failureCount = new AtomicInteger(0);
 	private AtomicInteger repliedCount = new AtomicInteger(0);
 
-	private volatile String state = "Conn/Pub/Sub";
-
 	private AtomicInteger numConnectionsInitiated = new AtomicInteger();
 	private AtomicInteger numConnectionsEstablished = new AtomicInteger();
 	private AtomicInteger numSubscriptionsInitiated = new AtomicInteger();
@@ -57,13 +55,12 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 
 	private int brokerIndex = 0;
 
-	private ScheduledExecutorService statLoggingService;
 	private ScheduledExecutorService connectionService;
 	private volatile long endTimeMillis = Long.MAX_VALUE;
 
-	private List<Pair<String, CallbackConnection>> activeConnections;
-	private DelayQueue<DelayedMessage> outboundMessages = new DelayQueue<DelayedMessage>();
-	private long messageIntervalMillis;
+	private volatile List<Pair<String, CallbackConnection>> activeConnections;
+	private volatile DelayQueue<DelayedMessage> outboundMessages = new DelayQueue<DelayedMessage>();
+	private volatile long messageIntervalMillis;
 
 	private List<MQTTFlightTracer> tracers;
 	private ConnectionStatReporter connectionStatReporter = new ConnectionStatReporter();
@@ -129,7 +126,7 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 				endTimeMillis = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(getConfig().getDuration(), getConfig().getDurationUnit());
 				logger.info("All " + getConfig().getNumConnections() + " subscriptions have been established. The sender will publish the messages for an additional " + getConfig().getDuration()
 						+ " " + getConfig().getDurationUnit() + ", then terminate");
-				state = "Pub/Sub";
+				setState("Pub/Sub");
 			}
 		}
 
@@ -253,6 +250,8 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 	}
 
 	private void send() throws InterruptedException {
+		setState("Conn/Pub/Sub");
+
 		// Start a thread that periodically creates more connections with the broker(s)
 		connectionService = Executors.newSingleThreadScheduledExecutor();
 		connectionService.scheduleAtFixedRate(new Runnable() {
@@ -329,16 +328,18 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 				logger.debug("Publishing a message using the connection " + msg.conn.key);
 			}
 
-			byte[] payload = payloads.get(publishedCount.get() % payloads.size());
+			byte[] payload = payloads.get(index % payloads.size());
 
-			msg.conn.value.publish(getConfig().getTopic(), Payload.toBytes(msg.conn.key, index++, payload), getConfig().getQos(), false, publishCallback);
+			msg.conn.value.publish(getConfig().getTopic(), Payload.toBytes(msg.conn.key, Integer.toString(index), payload), getConfig().getQos(), false, publishCallback);
 			publishedCount.incrementAndGet();
 
 			// Put the next message for this connection
 			outboundMessages.put(new DelayedMessage(msg.conn, System.currentTimeMillis() + messageIntervalMillis));
+
+			index++;
 		}
 
-		state = "Sub";
+		setState("Sub");
 		logger.info("All messages have been published");
 		connectionService.shutdown();
 	}
@@ -349,9 +350,7 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 
 	@Override
 	public void destroy() throws Exception {
-		if (statLoggingService != null) {
-			statLoggingService.shutdown();
-		}
+		outboundMessages.clear();
 
 		if (connectionService != null) {
 			connectionService.shutdown();
@@ -402,7 +401,7 @@ public class FixedThroughputPerConnectionMQTTPublisher extends Sender<byte[], Fi
 	}
 
 	public void log() {
-		System.out.print(state);
+		System.out.print(getState());
 		System.out.print("\tPublished: ");
 		System.out.print(publishedCount);
 		System.out.print(", Replied: ");

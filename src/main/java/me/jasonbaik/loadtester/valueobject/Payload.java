@@ -44,7 +44,7 @@ public class Payload {
 		this.data = data;
 	}
 
-	public static byte[] toBytes(String connectionId, int messageId, byte[] data) {
+	public static byte[] toBytes(String connectionId, String messageId, byte[] data) {
 		byte[] idPair = (connectionId + "\n" + messageId + "\n").getBytes();
 		byte[] payload = new byte[idPair.length + data.length];
 		System.arraycopy(idPair, 0, payload, 0, idPair.length);
