@@ -40,6 +40,9 @@
 		<property name="messagePoolSize" value="5000" />
 		<property name="keepAliveIntervalMilli" value="0" />
 		<property name="topic" value="mqtt/attack" />
+		<property name="throughputStepSize" value="200" />
+		<property name="throughputStepInterval" value="10" />
+		<property name="throughputStepIntervalUnit" value="SECONDS" />
 	</bean>
 
 	<util:list id="sends" value-type="me.jasonbaik.loadtester.valueobject.Send">
@@ -50,6 +53,16 @@
 	</util:list>
 
 	<util:list id="receives" value-type="me.jasonbaik.loadtester.valueobject.Receive">
+		<bean class="me.jasonbaik.loadtester.valueobject.Receive">
+			<property name="name" value="QueueDrainer" />
+			<property name="receiverConfig">
+				<bean class="me.jasonbaik.loadtester.receiver.impl.QueueDrainerConfig">
+					<property name="brokers" ref="brokers" />
+					<property name="queue" value="mqtt.attack.queue" />
+					<property name="numJMSConnections" value="10" />
+				</bean>
+			</property>
+		</bean>
 		<bean class="me.jasonbaik.loadtester.valueobject.Receive">
 			<property name="name" value="BrokerThreadCountCollector" />
 			<property name="receiverConfig">

@@ -52,6 +52,7 @@
 			<property name="name" value="n_1_publish_1_1_subscribe_local" />
 			<property name="brokers" ref="brokers" />
 			<property name="sends" ref="sends" />
+			<property name="receives" ref="receives" />
 			<property name="reportDir" value="D:/report" />
 			<property name="gcBrokers" value="false" />
 		</bean>
@@ -61,6 +62,19 @@
 		<bean class="me.jasonbaik.loadtester.valueobject.Send">
 			<property name="name" value="send1" />
 			<property name="senderConfig" ref="senderConfig" />
+		</bean>
+	</util:list>
+
+	<util:list id="receives" value-type="me.jasonbaik.loadtester.valueobject.Receive">
+		<bean class="me.jasonbaik.loadtester.valueobject.Receive">
+			<property name="name" value="QueueDrainer" />
+			<property name="receiverConfig">
+				<bean class="me.jasonbaik.loadtester.receiver.impl.QueueDrainerConfig">
+					<property name="brokers" ref="brokers" />
+					<property name="queue" value="mqtt.attack.queue" />
+					<property name="numJMSConnections" value="10" />
+				</bean>
+			</property>
 		</bean>
 	</util:list>
 

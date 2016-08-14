@@ -14,9 +14,6 @@
 		<property name="qos" value="EXACTLY_ONCE" />
 		<property name="startThroughput" value="100" />
 		<property name="endThroughput" value="10000" />
-		<property name="throughputStepSize" value="50" />
-		<property name="throughputStepInterval" value="30" />
-		<property name="throughputStepIntervalUnit" value="SECONDS" />
 	</bean>
 
 	<util:list id="scenarios" value-type="me.jasonbaik.loadtester.valueobject.Scenario">
@@ -24,6 +21,7 @@
 			<property name="name" value="max_steady_state_throughput_1000_conn_tcp" />
 			<property name="brokers" ref="brokers" />
 			<property name="sends" ref="sends" />
+			<property name="receives" ref="receives" />
 			<property name="reportDir" value="report" />
 		</bean>
 	</util:list>

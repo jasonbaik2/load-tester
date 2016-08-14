@@ -239,12 +239,19 @@ public class ThroughputIncreasingMQTTPublisher extends AbstractSender<byte[], Th
 		while (throughput < getConfig().getEndThroughput()) {
 			long msgIntervalMicro = new BigDecimal(1e6).divide(new BigDecimal(throughput), BigDecimal.ROUND_HALF_EVEN).longValue();
 			long endTime = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(getConfig().getThroughputStepInterval(), getConfig().getThroughputStepIntervalUnit());
+			final String threadName = "Pub at " + throughput + " msg/s";
 
 			publishService = Executors.newSingleThreadScheduledExecutor();
 			publishService.scheduleAtFixedRate(new FixedThroughputPublishRunnable(publishService, throughput, endTime), 0, msgIntervalMicro, TimeUnit.MICROSECONDS);
-			setState("Pub at " + throughput + " msg/s");
+			setState(threadName);
 
-			publishService.awaitTermination(Integer.MAX_VALUE, TimeUnit.DAYS);
+			try {
+				publishService.awaitTermination(Integer.MAX_VALUE, TimeUnit.DAYS);
+			} catch (InterruptedException e) {
+				interruptIfInterrupted("Interrupted while sending at " + throughput + " msg/s");
+				return;
+			}
+
 			throughput += getConfig().getThroughputStepSize();
 		}
 
@@ -267,23 +274,21 @@ public class ThroughputIncreasingMQTTPublisher extends AbstractSender<byte[], Th
 
 		@Override
 		public void run() {
-			try {
-				interruptIfInterrupted("Interrupted while sending at " + throughput + " msg/s");
-			} catch (InterruptedException e) {
-				logger.warn("Publisher interrupted", e);
-				return;
-			}
-
 			if (endTime < System.currentTimeMillis()) {
-				publishService.shutdownNow();
+				publishService.shutdown();
 				return;
 			}
 
-			byte[] payload = payloads.get(index % payloads.size());
-			KeyValuePair<String, CallbackConnection> conn = connections.get(index % connections.size());
-			conn.value.publish(getConfig().getTopic(), Payload.toBytes(conn.key, throughput + "-" + index, payload), getConfig().getQos(), false, publishCallback);
-			publishedCount.incrementAndGet();
-			index++;
+			try {
+				byte[] payload = payloads.get(index % payloads.size());
+				KeyValuePair<String, CallbackConnection> conn = connections.get(index % connections.size());
+				conn.value.publish(getConfig().getTopic(), Payload.toBytes(conn.key, throughput + "-" + index, payload), getConfig().getQos(), false, publishCallback);
+				publishedCount.incrementAndGet();
+				index++;
+
+			} catch (Exception e) {
+				logger.error("Error", e);
+			}
 		}
 
 	}
