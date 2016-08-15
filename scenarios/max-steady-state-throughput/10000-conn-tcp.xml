@@ -18,7 +18,7 @@
 
 	<util:list id="scenarios" value-type="me.jasonbaik.loadtester.valueobject.Scenario">
 		<bean class="me.jasonbaik.loadtester.valueobject.Scenario">
-			<property name="name" value="max_steady_state_throughput_1000_conn_tcp" />
+			<property name="name" value="max_steady_state_throughput_10000_conn_tcp" />
 			<property name="brokers" ref="brokers" />
 			<property name="sends" ref="sends" />
 			<property name="receives" ref="receives" />

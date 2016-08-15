@@ -1,7 +1,6 @@
 plotThroughput <- function(data, main, x, xlim, xMarks, avgPeriod){
   numMsgs = length(data)
   y = vector(length = length(x))
-  yMarks = seq(from = 0 , to = 1000, by = 100)
   
   for (nanos in data) {
     index = ceiling(nanos / 10^9 / avgPeriod) + 1 / avgPeriod
@@ -22,8 +21,11 @@ plotThroughput <- function(data, main, x, xlim, xMarks, avgPeriod){
   } else {
     y = y[1:length(x)]
   }
-
-  plot(x, y, main=main, axes=FALSE, xlim = xlim, ylim = c(0, max(yMarks)), xlab="Second (s)", ylab="msg/s", pch = 1, type = "l", cex = 0.1)
+  
+  yMax = max(y[!is.na(y)])
+  yMarkMax = round(yMax*10)/10
+  yMarks = seq(from = 0 , to = yMarkMax, by = yMarkMax/20)
+  plot(x, y, main=main, axes=FALSE, xlim = xlim, ylim = c(0, yMarkMax), xlab="Second (s)", ylab="msg/s", pch = 1, type = "l", cex = 0.1)
   duration = round((max(data) - min(data)) / 10^9, digits=1)
   avgThroughput = numMsgs / (max(data) - min(data)) * 10^9
   abline(h = avgThroughput, col="red", cex = 0.1)
