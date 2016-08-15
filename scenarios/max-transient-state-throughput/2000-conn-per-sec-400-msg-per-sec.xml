@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ctx="http://www.springframework.org/schema/context" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+	<import resource="base.xml" />
+
+	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.FixedThroughputPerConnectionMQTTPublisherConfig" parent="senderConfigBase">
+		<property name="numConnections" value="20000" />
+		<property name="newConnectionInterval" value="30" />
+		<property name="newConnectionIntervalUnit" value="MILLISECONDS" />
+		<property name="connectionStepSize" value="1" />
+		<property name="messageInterval" value="50" />
+		<property name="messageIntervalUnit" value="SECONDS" />
+	</bean>
+
+	<util:list id="scenarios" value-type="me.jasonbaik.loadtester.valueobject.Scenario">
+		<bean class="me.jasonbaik.loadtester.valueobject.Scenario">
+			<property name="name" value="2000-conn-per-sec-400-msg-per-sec" />
+			<property name="brokers" ref="brokers" />
+			<property name="sends" ref="sends" />
+			<property name="receives" ref="receives" />
+			<property name="reportDir" value="report" />
+		</bean>
+	</util:list>
+
+</beans>
