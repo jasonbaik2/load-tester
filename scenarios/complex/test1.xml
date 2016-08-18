@@ -1,4 +1,0 @@
-<managementContext>
-	<managementContext
-		suppressMBean="endpoint=dynamicProducer,endpoint=Consumer,connectionName=*,destinationName=ActiveMQ.Advisory.*" />
-</managementContext> 

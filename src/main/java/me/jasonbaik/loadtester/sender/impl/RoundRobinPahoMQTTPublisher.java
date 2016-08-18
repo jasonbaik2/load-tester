@@ -111,9 +111,9 @@ public class RoundRobinPahoMQTTPublisher extends AbstractRoundRobinMQTTPublisher
 				this.client.connect(this.connectOptions, null, connectCallback);
 
 			} catch (MqttSecurityException e) {
-				logger.error(e);
+				logger.error("Security Exception", e);
 			} catch (MqttException e) {
-				logger.error(e);
+				logger.error("Exception", e);
 			}
 		}
 

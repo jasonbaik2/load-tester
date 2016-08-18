@@ -38,15 +38,9 @@
 		</bean>
 	</util:list>
 
-	<bean id="samplerConfig" class="me.jasonbaik.loadtester.sampler.impl.BurstSamplerConfig">
-		<property name="burstInterval" value="5" />
-		<property name="burstIntervalUnit" value="MINUTES" />
-		<property name="burstCount" value="5000" />
-	</bean>
-
 	<util:list id="scenarios" value-type="me.jasonbaik.loadtester.valueobject.Scenario">
 		<bean class="me.jasonbaik.loadtester.valueobject.Scenario">
-			<property name="name" value="n_1_publish_1_1_subscribe_burst_networked_4_spokes" />
+			<property name="name" value="burst_networked_4_spokes" />
 			<property name="brokers" ref="brokers" />
 			<property name="sends" ref="sends" />
 			<property name="receives" ref="receives" />

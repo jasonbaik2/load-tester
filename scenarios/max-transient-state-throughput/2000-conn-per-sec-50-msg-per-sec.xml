@@ -7,13 +7,16 @@
 
 	<import resource="base.xml" />
 
-	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.FixedThroughputPerConnectionMQTTPublisherConfig" parent="senderConfigBase">
+	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.ConnectionIncreasingMQTTPublisherConfig" parent="senderConfigBase">
 		<property name="numConnections" value="20000" />
 		<property name="newConnectionInterval" value="30" />
 		<property name="newConnectionIntervalUnit" value="MILLISECONDS" />
 		<property name="connectionStepSize" value="1" />
-		<property name="messageInterval" value="400" />
-		<property name="messageIntervalUnit" value="SECONDS" />
+	</bean>
+
+	<bean id="samplerConfig" class="me.jasonbaik.loadtester.sampler.impl.CyclicSamplerConfig">
+		<property name="interval" value="20" />
+		<property name="intervalUnit" value="MILLISECONDS" />
 	</bean>
 
 	<util:list id="scenarios" value-type="me.jasonbaik.loadtester.valueobject.Scenario">

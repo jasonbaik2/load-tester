@@ -20,24 +20,31 @@
 		</entry>
 	</util:map>
 
-	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.RoundRobinMQTTPublisherConfig">
+	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.ConnectionIncreasingMQTTPublisherConfig">
 		<property name="brokers" ref="brokers" />
 		<property name="ssl" value="true" />
+		<property name="trace" value="true" />
 		<property name="keyStore" value="keystore/client.ks" />
 		<property name="keyStorePassword" value="password" />
 		<property name="trustStore" value="keystore/client.ks" />
 		<property name="trustStorePassword" value="password" />
-		<property name="duration" value="15" />
-		<property name="durationUnit" value="MINUTES" />
-		<property name="numConnections" value="5000" />
+		<property name="numConnections" value="20000" />
+		<property name="newConnectionInterval" value="3" />
+		<property name="newConnectionIntervalUnit" value="MILLISECONDS" />
+		<property name="connectionStepSize" value="1" />
 		<property name="messagePoolSize" value="5000" />
 		<property name="messageByteLength" value="1024" />
 		<property name="qos" value="EXACTLY_ONCE" />
 		<property name="cleanSession" value="true" />
 		<property name="keepAliveIntervalMilli" value="0" />
-		<property name="connectionStepSize" value="1000" />
-		<property name="connectionStepIntervalMilli" value="10000" />
 		<property name="topic" value="mqtt/attack" />
+		<property name="duration" value="15" />
+		<property name="durationUnit" value="MINUTES" />
+	</bean>
+
+	<bean id="samplerConfig" class="me.jasonbaik.loadtester.sampler.impl.RandomSamplerConfig">
+		<property name="expectedInterval" value="12" />
+		<property name="expectedIntervalUnit" value="MILLISECONDS" />
 	</bean>
 
 	<bean id="receiverConfig" class="me.jasonbaik.loadtester.receiver.impl.MQTTReplyingJMSConsumerConfig">
@@ -50,8 +57,8 @@
 		<property name="trustStorePassword" value="password" />
 		<property name="qos" value="EXACTLY_ONCE" />
 		<property name="cleanSession" value="true" />
-		<property name="numJMSConnections" value="5" />
-		<property name="numMQTTConnections" value="5" />
+		<property name="numJMSConnections" value="25" />
+		<property name="numMQTTConnections" value="25" />
 		<property name="numReplyThreads" value="5" />
 	</bean>
 
