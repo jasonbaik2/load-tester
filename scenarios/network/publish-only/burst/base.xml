@@ -28,8 +28,8 @@
 		<property name="keyStorePassword" value="password" />
 		<property name="trustStore" value="keystore/client.ks" />
 		<property name="trustStorePassword" value="password" />
-		<property name="numConnections" value="20000" />
-		<property name="newConnectionInterval" value="3" />
+		<property name="numConnections" value="5000" />
+		<property name="newConnectionInterval" value="12" />
 		<property name="newConnectionIntervalUnit" value="MILLISECONDS" />
 		<property name="connectionStepSize" value="1" />
 		<property name="messagePoolSize" value="5000" />
@@ -42,24 +42,11 @@
 		<property name="durationUnit" value="MINUTES" />
 	</bean>
 
-	<bean id="samplerConfig" class="me.jasonbaik.loadtester.sampler.impl.RandomSamplerConfig">
-		<property name="expectedInterval" value="12" />
-		<property name="expectedIntervalUnit" value="MILLISECONDS" />
-	</bean>
+	<bean id="samplerConfig" class="me.jasonbaik.loadtester.sampler.impl.BurstSamplerConfig">
+		<property name="burstInterval" value="5" />
+		<property name="burstIntervalUnit" value="MINUTES" />
+		<property name="burstCount" value="5000" />
 
-	<bean id="receiverConfig" class="me.jasonbaik.loadtester.receiver.impl.MQTTReplyingJMSConsumerConfig">
-		<property name="brokers" ref="brokers" />
-		<property name="ssl" value="true" />
-		<property name="queue" value="mqtt.attack.queue" />
-		<property name="keyStore" value="keystore/client.ks" />
-		<property name="keyStorePassword" value="password" />
-		<property name="trustStore" value="keystore/client.ks" />
-		<property name="trustStorePassword" value="password" />
-		<property name="qos" value="EXACTLY_ONCE" />
-		<property name="cleanSession" value="true" />
-		<property name="numJMSConnections" value="25" />
-		<property name="numMQTTConnections" value="25" />
-		<property name="numReplyThreads" value="5" />
 	</bean>
 
 	<util:list id="sends" value-type="me.jasonbaik.loadtester.valueobject.Send">
@@ -87,8 +74,14 @@
 
 	<util:list id="receives" value-type="me.jasonbaik.loadtester.valueobject.Receive">
 		<bean class="me.jasonbaik.loadtester.valueobject.Receive">
-			<property name="name" value="receive1" />
-			<property name="receiverConfig" ref="receiverConfig" />
+			<property name="name" value="QueueDrainer" />
+			<property name="receiverConfig">
+				<bean class="me.jasonbaik.loadtester.receiver.impl.QueueDrainerConfig">
+					<property name="brokers" ref="brokers" />
+					<property name="queue" value="mqtt.attack.queue" />
+					<property name="numJMSConnections" value="10" />
+				</bean>
+			</property>
 		</bean>
 		<bean class="me.jasonbaik.loadtester.valueobject.Receive">
 			<property name="name" value="BrokerThreadCountCollector" />

@@ -67,13 +67,12 @@ public class MQTTReplyingJMSConsumer extends AbstractMQTTReplyingJMSConsumer<MQT
 
 	@Override
 	protected void initMQTTConnections() throws Exception {
-		Broker broker = getConfig().getBrokers().get(0);
-
 		mqttConns = new ArrayList<CallbackConnection>(getConfig().getNumMQTTConnections());
 		connectionLatch = new CountDownLatch(getConfig().getNumMQTTConnections());
 		tracers = new ArrayList<MQTTFlightTracer>(getConfig().getNumMQTTConnections());
 
 		for (int i = 0; i < getConfig().getNumMQTTConnections(); i++) {
+			Broker broker = getConfig().getBrokers().get(i % getConfig().getBrokers().size());
 			MQTT client = new MQTT();
 			client.setHost(MQTTClientFactory.getFusesourceConnectionUrl(broker, getConfig().isSsl()));
 			client.setClientId(mqttUuid + "-" + i);

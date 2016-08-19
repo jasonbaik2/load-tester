@@ -36,14 +36,13 @@ public class SynchronousMQTTReplyingJMSConsumer extends AbstractMQTTReplyingJMSC
 
 	@Override
 	protected void initMQTTConnections() throws Exception {
-		Broker broker = getConfig().getBrokers().get(0);
-
 		mqttConns = new ArrayBlockingQueue<FutureConnection>(getConfig().getNumMQTTConnections());
 		tracers = new ArrayList<MQTTFlightTracer>(getConfig().getNumMQTTConnections());
 
 		List<Future<Void>> connFutures = new ArrayList<Future<Void>>(getConfig().getNumMQTTConnections());
 
 		for (int i = 0; i < getConfig().getNumMQTTConnections(); i++) {
+			Broker broker = getConfig().getBrokers().get(i % getConfig().getBrokers().size());
 			MQTT client = new MQTT();
 			client.setHost(MQTTClientFactory.getFusesourceConnectionUrl(broker, getConfig().isSsl()));
 			client.setClientId(mqttUuid + "-" + i);
