@@ -90,21 +90,9 @@
 		</sslContext>
 
 		<networkConnectors>
-			<networkConnector name="linkToSpoke21" uri="static:(tcp://172.31.5.252:61616)" networkTTL="1" userName="admin" password="admin">
-				<staticallyIncludedDestinations>
-					<topic physicalName="mqtt.attack" />
-				</staticallyIncludedDestinations>
-			</networkConnector>
-			<networkConnector name="linkToSpoke23" uri="static:(tcp://172.31.14.98:61616)" networkTTL="1" userName="admin" password="admin">
-				<staticallyIncludedDestinations>
-					<topic physicalName="mqtt.attack" />
-				</staticallyIncludedDestinations>
-			</networkConnector>
-			<networkConnector name="linkToSpoke24" uri="static:(tcp://172.31.3.235:61616)" networkTTL="1" userName="admin" password="admin">
-				<staticallyIncludedDestinations>
-					<topic physicalName="mqtt.attack" />
-				</staticallyIncludedDestinations>
-			</networkConnector>
+			<networkConnector name="linkToSpoke21" uri="static:(tcp://172.31.5.252:61616)" networkTTL="1" userName="admin" password="admin" />
+			<networkConnector name="linkToSpoke23" uri="static:(tcp://172.31.14.98:61616)" networkTTL="1" userName="admin" password="admin" />
+			<networkConnector name="linkToSpoke24" uri="static:(tcp://172.31.3.235:61616)" networkTTL="1" userName="admin" password="admin" />
 		</networkConnectors>
 
 		<transportConnectors>
@@ -113,7 +101,7 @@
 			<!--<transportConnector name="mqtt" uri="mqtt+nio://0.0.0.0:0?wireFormat.maxFrameSize=104857600&amp;transport.subscriptionStrategy=mqtt-virtual-topic-subscriptions"/> -->
 			<transportConnector name="mqtt"
 				uri="mqtt+nio+ssl://0.0.0.0:0?wireFormat.maxFrameSize=104857600&amp;transport.useInactivityMonitor=false&amp;transport.enabledProtocols=TLSv1.2&amp;transport.needClientAuth=true&amp;transport.enabledCipherSuites=TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256" />
-			<!--<transportConnector name="mqtt" uri="mqtt+nio://0.0.0.0:0?wireFormat.maxFrameSize=104857600&amp;transport.useInactivityMonitor=false" /> -->
+			<!-- <transportConnector name="mqtt" uri="mqtt+nio://0.0.0.0:0?wireFormat.maxFrameSize=104857600&amp;transport.useInactivityMonitor=false" /> -->
 			<transportConnector name="ws" uri="ws://0.0.0.0:0?maximumConnections=1000&amp;wireFormat.maxFrameSize=104857600" />
 		</transportConnectors>
 	</broker>

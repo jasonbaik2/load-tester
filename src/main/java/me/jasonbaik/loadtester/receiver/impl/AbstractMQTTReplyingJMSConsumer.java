@@ -32,6 +32,7 @@ import me.jasonbaik.loadtester.valueobject.Payload;
 import me.jasonbaik.loadtester.valueobject.Protocol;
 import me.jasonbaik.loadtester.valueobject.ReportData;
 
+import org.apache.activemq.ActiveMQConnection;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -64,15 +65,11 @@ public abstract class AbstractMQTTReplyingJMSConsumer<T extends AbstractMQTTRepl
 
 		logger.info("Initializing JMS connections");
 
-		Broker broker = getConfig().getBrokers().get(0);
-
-		connFactory = new ActiveMQConnectionFactory(broker.getUsername(), broker.getPassword(), "tcp://" + broker.getHostname() + ":" + broker.getConnectors().get(Protocol.JMS).getPort());
-		connFactory.setAlwaysSessionAsync(false);
-
 		conns = new ArrayList<Connection>(getConfig().getNumJMSConnections());
 
 		for (int i = 0; i < getConfig().getNumJMSConnections(); i++) {
-			Connection conn = connFactory.createConnection();
+			Broker broker = getConfig().getBrokers().get(i % getConfig().getBrokers().size());
+			Connection conn = ActiveMQConnection.makeConnection(broker.getUsername(), broker.getPassword(), "tcp://" + broker.getHostname() + ":" + broker.getConnectors().get(Protocol.JMS).getPort());
 			conn.setClientID(uuid + "-" + i);
 			Session session = conn.createSession(false, Session.AUTO_ACKNOWLEDGE);
 			session.createConsumer(session.createQueue(getConfig().getQueue())).setMessageListener(this);

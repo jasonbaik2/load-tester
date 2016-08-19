@@ -180,8 +180,8 @@ report <- function (reportDir, reportFile, sends, receives, threadFiles, gcFiles
 }
 
 setwd(dir = "C:/Users/HCC5fkv/git_repo/load-tester-github/load-tester/r")
-reportDir = "D:/report/tcp_vs_nio_thread_growth_nio_2016_08_13_03_21_54"
-startTime = "2016-08-13 03:19:27,360"
+reportDir = "D:/report/2000-conn-per-sec-400-msg-per-sec_2016_08_15_18_23_09"
+startTime = "2016-08-15 18:10:53,764"
 
 sends = c("send1")#, "send2", "send3", "send4")
 receives = c()#"receive1","receive2","receive3","receive4")
