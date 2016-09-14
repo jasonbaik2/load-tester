@@ -60,8 +60,8 @@ public class BrokerLoadTestController<S1, R1> extends Node {
 	private Scenario<S1, R1> currentScenario;
 
 	private void start() throws Exception {
-		try {
-			while (true) {
+		while (true) {
+			try {
 				List<Scenario<S1, R1>> scenarios = loadScenarios();
 
 				for (Scenario<S1, R1> scenario : scenarios) {
@@ -96,9 +96,9 @@ public class BrokerLoadTestController<S1, R1> extends Node {
 						}
 					}
 				}
+			} catch (Exception e) {
+				continue;
 			}
-		} finally {
-			destroy();
 		}
 	}
 
@@ -153,6 +153,7 @@ public class BrokerLoadTestController<S1, R1> extends Node {
 
 		try {
 			return testContext.getBean("scenarios", List.class);
+
 		} finally {
 			testContext.close();
 		}

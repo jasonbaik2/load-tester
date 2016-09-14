@@ -6,7 +6,7 @@
        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
 
 	<util:list id="brokers" value-type="me.jasonbaik.loadtester.valueobject.Broker">
-		<bean class="me.jasonbaik.loadtester.valueobject.Broker">
+		<bean class="me.jasonbaik.loadtester.valueobject.Broker" parent="brokerBase">
 			<property name="hostname" value="172.31.5.252" />
 			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://172.31.5.252:1099/karaf-root" />
 			<property name="username" value="admin" />

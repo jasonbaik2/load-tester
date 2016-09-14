@@ -12,17 +12,17 @@
 		</property>
 	</bean>
 
-	<broker xmlns="http://activemq.apache.org/schema/core" brokerName="${broker-name}" dataDirectory="${data}" start="false" restartAllowed="false" schedulePeriodForDestinationPurge="10000">
+	<broker xmlns="http://activemq.apache.org/schema/core" brokerName="${broker-name}" dataDirectory="${data}" start="false" restartAllowed="false">
 
 		<destinationPolicy>
 			<policyMap>
 				<policyEntries>
-					<policyEntry topic=">" producerFlowControl="false" gcInactiveDestinations="true" inactiveTimoutBeforeGC="30000">
+					<policyEntry topic=">" producerFlowControl="false">
 						<pendingMessageLimitStrategy>
 							<constantPendingMessageLimitStrategy limit="-1" />
 						</pendingMessageLimitStrategy>
 					</policyEntry>
-					<policyEntry queue=">" producerFlowControl="false" memoryLimit="1024mb" gcInactiveDestinations="true" inactiveTimoutBeforeGC="30000">
+					<policyEntry queue=">" producerFlowControl="false" memoryLimit="1024mb">
 					</policyEntry>
 				</policyEntries>
 			</policyMap>

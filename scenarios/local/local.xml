@@ -6,11 +6,16 @@
        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
 
 	<util:list id="brokers" value-type="me.jasonbaik.loadtester.valueobject.Broker">
-		<bean class="me.jasonbaik.loadtester.valueobject.Broker">
+		<bean class="me.jasonbaik.loadtester.valueobject.Broker" parent="brokerBase">
 			<property name="hostname" value="localhost" />
 			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://localhost:1099/jmxrmi" />
 			<property name="username" value="admin" />
 			<property name="password" value="admin" />
+			<property name="keyStore" value="keystore/client.ks" />
+			<property name="keyStorePassword" value="password" />
+			<property name="trustStore" value="keystore/client.ks" />
+			<property name="trustStorePassword" value="password" />
+			<property name="sslProperties" ref="sslProperties" />
 			<property name="connectors">
 				<util:map>
 					<entry key="MQTT">
@@ -30,21 +35,43 @@
 		</bean>
 	</util:list>
 
-	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.ThroughputIncreasingMQTTPublisherConfig">
+	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.ConnectionIncreasingMQTTPublisherConfig">
 		<property name="brokers" ref="brokers" />
+		<property name="clientType" value="PAHO" />
 		<property name="ssl" value="false" />
 		<property name="trace" value="true" />
 		<property name="numConnections" value="100" />
+		<property name="newConnectionInterval" value="1" />
+		<property name="newConnectionIntervalUnit" value="SECONDS" />
+		<property name="connectionStepSize" value="1" />
 		<property name="messagePoolSize" value="100" />
 		<property name="messageByteLength" value="1024" />
-		<property name="qos" value="EXACTLY_ONCE" />
+		<property name="qos" value="2" />
+		<property name="cleanSession" value="true" />
 		<property name="keepAliveIntervalMilli" value="0" />
 		<property name="topic" value="mqtt/attack" />
-		<property name="startThroughput" value="1" />
-		<property name="endThroughput" value="10" />
-		<property name="throughputStepSize" value="1" />
-		<property name="throughputStepInterval" value="10" />
-		<property name="throughputStepIntervalUnit" value="SECONDS" />
+		<property name="duration" value="1" />
+		<property name="durationUnit" value="MINUTES" />
+	</bean>
+
+	<bean id="samplerConfig" class="me.jasonbaik.loadtester.sampler.impl.RandomSamplerConfig">
+		<property name="expectedInterval" value="1" />
+		<property name="expectedIntervalUnit" value="SECONDS" />
+	</bean>
+
+	<bean id="receiverConfig" class="me.jasonbaik.loadtester.receiver.impl.MQTTReplyingJMSConsumerConfig">
+		<property name="brokers" ref="brokers" />
+		<property name="ssl" value="false" />
+		<property name="queue" value="mqtt.attack.queue" />
+		<property name="keyStore" value="keystore/client.ks" />
+		<property name="keyStorePassword" value="password" />
+		<property name="trustStore" value="keystore/client.ks" />
+		<property name="trustStorePassword" value="password" />
+		<property name="qos" value="EXACTLY_ONCE" />
+		<property name="cleanSession" value="true" />
+		<property name="numJMSConnections" value="5" />
+		<property name="numMQTTConnections" value="5" />
+		<property name="numReplyThreads" value="5" />
 	</bean>
 
 	<util:list id="scenarios" value-type="me.jasonbaik.loadtester.valueobject.Scenario">
@@ -61,20 +88,15 @@
 	<util:list id="sends" value-type="me.jasonbaik.loadtester.valueobject.Send">
 		<bean class="me.jasonbaik.loadtester.valueobject.Send">
 			<property name="name" value="send1" />
+			<property name="samplerConfig" ref="samplerConfig" />
 			<property name="senderConfig" ref="senderConfig" />
 		</bean>
 	</util:list>
 
 	<util:list id="receives" value-type="me.jasonbaik.loadtester.valueobject.Receive">
 		<bean class="me.jasonbaik.loadtester.valueobject.Receive">
-			<property name="name" value="QueueDrainer" />
-			<property name="receiverConfig">
-				<bean class="me.jasonbaik.loadtester.receiver.impl.QueueDrainerConfig">
-					<property name="brokers" ref="brokers" />
-					<property name="queue" value="mqtt.attack.queue" />
-					<property name="numJMSConnections" value="10" />
-				</bean>
-			</property>
+			<property name="name" value="receive1" />
+			<property name="receiverConfig" ref="receiverConfig" />
 		</bean>
 	</util:list>
 

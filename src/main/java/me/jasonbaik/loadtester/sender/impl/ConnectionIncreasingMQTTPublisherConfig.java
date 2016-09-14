@@ -3,10 +3,9 @@ package me.jasonbaik.loadtester.sender.impl;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import me.jasonbaik.loadtester.client.MQTTClientFactory.ClientType;
 import me.jasonbaik.loadtester.sender.SenderConfig;
 import me.jasonbaik.loadtester.valueobject.Broker;
-
-import org.fusesource.mqtt.client.QoS;
 
 public class ConnectionIncreasingMQTTPublisherConfig extends SenderConfig<ConnectionIncreasingMQTTPublisher> {
 
@@ -14,18 +13,14 @@ public class ConnectionIncreasingMQTTPublisherConfig extends SenderConfig<Connec
 
 	private String name;
 
+	private ClientType clientType = ClientType.FUSESOURCE;
 	private List<Broker> brokers;
 	private boolean ssl;
 	private boolean trace;
 
-	private String keyStore;
-	private String keyStorePassword;
-	private String trustStore;
-	private String trustStorePassword;
-
 	private int messageByteLength;
 	private int messagePoolSize;
-	private QoS qos;
+	private int qos;
 
 	private String topic;
 	private boolean cleanSession;
@@ -68,22 +63,6 @@ public class ConnectionIncreasingMQTTPublisherConfig extends SenderConfig<Connec
 		this.ssl = ssl;
 	}
 
-	public String getKeyStore() {
-		return keyStore;
-	}
-
-	public void setKeyStore(String keyStore) {
-		this.keyStore = keyStore;
-	}
-
-	public String getTrustStore() {
-		return trustStore;
-	}
-
-	public void setTrustStore(String trustStore) {
-		this.trustStore = trustStore;
-	}
-
 	public int getMessageByteLength() {
 		return messageByteLength;
 	}
@@ -100,11 +79,11 @@ public class ConnectionIncreasingMQTTPublisherConfig extends SenderConfig<Connec
 		this.messagePoolSize = messagePoolSize;
 	}
 
-	public QoS getQos() {
+	public int getQos() {
 		return qos;
 	}
 
-	public void setQos(QoS qos) {
+	public void setQos(int qos) {
 		this.qos = qos;
 	}
 
@@ -142,22 +121,6 @@ public class ConnectionIncreasingMQTTPublisherConfig extends SenderConfig<Connec
 
 	public static long getSerialversionuid() {
 		return serialVersionUID;
-	}
-
-	public String getKeyStorePassword() {
-		return keyStorePassword;
-	}
-
-	public void setKeyStorePassword(String keyStorePassword) {
-		this.keyStorePassword = keyStorePassword;
-	}
-
-	public String getTrustStorePassword() {
-		return trustStorePassword;
-	}
-
-	public void setTrustStorePassword(String trustStorePassword) {
-		this.trustStorePassword = trustStorePassword;
 	}
 
 	public int getConnectionStepSize() {
@@ -208,12 +171,20 @@ public class ConnectionIncreasingMQTTPublisherConfig extends SenderConfig<Connec
 		this.durationUnit = durationUnit;
 	}
 
+	public ClientType getClientType() {
+		return clientType;
+	}
+
+	public void setClientType(ClientType clientType) {
+		this.clientType = clientType;
+	}
+
 	@Override
 	public String toString() {
-		return "ConnectionIncreasingMQTTPublisherConfig [name=" + name + ", brokers=" + brokers + ", ssl=" + ssl + ", trace=" + trace + ", keyStore=" + keyStore + ", trustStore=" + trustStore
-				+ ", messageByteLength=" + messageByteLength + ", messagePoolSize=" + messagePoolSize + ", qos=" + qos + ", topic=" + topic + ", cleanSession=" + cleanSession
-				+ ", keepAliveIntervalMilli=" + keepAliveIntervalMilli + ", numConnections=" + numConnections + ", newConnectionInterval=" + newConnectionInterval + ", newConnectionIntervalUnit="
-				+ newConnectionIntervalUnit + ", connectionStepSize=" + connectionStepSize + ", duration=" + duration + ", durationUnit=" + durationUnit + "]";
+		return "ConnectionIncreasingMQTTPublisherConfig [name=" + name + ", clientType=" + clientType + ", brokers=" + brokers + ", ssl=" + ssl + ", trace=" + trace + ", messageByteLength="
+				+ messageByteLength + ", messagePoolSize=" + messagePoolSize + ", qos=" + qos + ", topic=" + topic + ", cleanSession=" + cleanSession + ", keepAliveIntervalMilli="
+				+ keepAliveIntervalMilli + ", numConnections=" + numConnections + ", newConnectionInterval=" + newConnectionInterval + ", newConnectionIntervalUnit=" + newConnectionIntervalUnit
+				+ ", connectionStepSize=" + connectionStepSize + ", duration=" + duration + ", durationUnit=" + durationUnit + "]";
 	}
 
 }

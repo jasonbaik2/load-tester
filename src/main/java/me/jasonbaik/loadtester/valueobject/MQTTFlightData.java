@@ -10,6 +10,7 @@ public class MQTTFlightData {
 	private long pubRecReceiveTime = -1;
 	private long pubRelSendTime = -1;
 	private long pubCompReceiveTime = -1;
+	private long replyTime = -1;
 
 	public void setPubTimeMillis(long pubTimeMillis) {
 		this.pubTimeMillis = pubTimeMillis;
@@ -65,6 +66,14 @@ public class MQTTFlightData {
 
 	public void setMessageId(String messageId) {
 		this.messageId = messageId;
+	}
+
+	public long getReplyTime() {
+		return replyTime;
+	}
+
+	public void setReplyTime(long replyTime) {
+		this.replyTime = replyTime;
 	}
 
 }

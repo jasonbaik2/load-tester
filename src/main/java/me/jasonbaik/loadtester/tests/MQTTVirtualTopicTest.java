@@ -19,8 +19,6 @@ import org.junit.Test;
 
 public class MQTTVirtualTopicTest {
 
-	private static final String VIRTUAL_TOPIC = "VirtualTopic";
-
 	private static Connection conn;
 	private static Session session;
 

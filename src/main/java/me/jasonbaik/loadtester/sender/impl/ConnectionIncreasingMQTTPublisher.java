@@ -1,6 +1,5 @@
 package me.jasonbaik.loadtester.sender.impl;
 
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -12,7 +11,9 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import me.jasonbaik.loadtester.client.MQTTClientCallback;
 import me.jasonbaik.loadtester.client.MQTTClientFactory;
+import me.jasonbaik.loadtester.client.MQTTClientWrapper;
 import me.jasonbaik.loadtester.reporter.impl.ConnectionStatReporter;
 import me.jasonbaik.loadtester.reporter.impl.MQTTFlightTracer;
 import me.jasonbaik.loadtester.sampler.PayloadIterator;
@@ -20,7 +21,6 @@ import me.jasonbaik.loadtester.sampler.Sampler;
 import me.jasonbaik.loadtester.sampler.SamplerTask;
 import me.jasonbaik.loadtester.sender.AbstractSender;
 import me.jasonbaik.loadtester.util.RandomXmlGenerator;
-import me.jasonbaik.loadtester.util.SSLUtil;
 import me.jasonbaik.loadtester.valueobject.Broker;
 import me.jasonbaik.loadtester.valueobject.MQTTFlightData;
 import me.jasonbaik.loadtester.valueobject.Payload;
@@ -28,13 +28,7 @@ import me.jasonbaik.loadtester.valueobject.ReportData;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.fusesource.hawtbuf.Buffer;
-import org.fusesource.hawtbuf.UTF8Buffer;
-import org.fusesource.mqtt.client.Callback;
-import org.fusesource.mqtt.client.CallbackConnection;
-import org.fusesource.mqtt.client.ExtendedListener;
-import org.fusesource.mqtt.client.MQTT;
-import org.fusesource.mqtt.client.Topic;
+import org.eclipse.paho.client.mqttv3.MqttException;
 
 public class ConnectionIncreasingMQTTPublisher extends AbstractSender<byte[], ConnectionIncreasingMQTTPublisherConfig> {
 
@@ -59,64 +53,57 @@ public class ConnectionIncreasingMQTTPublisher extends AbstractSender<byte[], Co
 	private volatile ScheduledExecutorService connectionService;
 	private volatile long endTimeMillis = Long.MAX_VALUE;
 
-	private volatile ArrayBlockingQueue<Pair<String, CallbackConnection>> activeConnections;
+	private volatile ArrayBlockingQueue<MQTTClientWrapper> activeConnections;
 
 	private volatile List<MQTTFlightTracer> tracers;
 	private volatile ConnectionStatReporter connectionStatReporter = new ConnectionStatReporter();
 
-	static class Pair<K, V> {
-		public Pair(K key, V value) {
+	class ConnectCallback implements MQTTClientCallback {
+
+		MQTTClientWrapper clientWrapper;
+
+		private ConnectCallback(MQTTClientWrapper clientWrapper) {
 			super();
-			this.key = key;
-			this.value = value;
-		}
-
-		K key;
-		V value;
-	}
-
-	class ConnectCallback implements Callback<Void> {
-
-		MQTT client;
-		CallbackConnection conn;
-
-		private ConnectCallback(MQTT client, CallbackConnection conn) {
-			super();
-			this.client = client;
-			this.conn = conn;
+			this.clientWrapper = clientWrapper;
 		}
 
 		@Override
-		public void onSuccess(Void value) {
+		public void onSuccess() throws Exception {
 			numConnectionsEstablished.incrementAndGet();
-			connectionStatReporter.recordConnectionComp(client.getClientId().toString());
+			connectionStatReporter.recordConnectionComp(clientWrapper.getConnectionId());
 
-			conn.subscribe(new Topic[] { new Topic(client.getClientId().toString(), getConfig().getQos()) }, new SubscribeCallback(new Pair<String, CallbackConnection>(
-					client.getClientId().toString(), conn)));
+			try {
+				clientWrapper.subscribe(clientWrapper.getConnectionId(), getConfig().getQos(), new SubscribeCallback(clientWrapper));
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
 			numSubscriptionsInitiated.incrementAndGet();
 		}
 
 		@Override
-		public void onFailure(Throwable value) {
-			logger.error("Connection " + client.getClientId() + " could not be established", value);
+		public void onFailure() throws Exception {
+			logger.error("Connection " + clientWrapper.getConnectionId() + " could not be established");
 			numConnectionsInitiated.decrementAndGet();
 		}
 
 	};
 
-	class SubscribeCallback implements Callback<byte[]> {
+	class SubscribeCallback implements MQTTClientCallback {
 
-		Pair<String, CallbackConnection> conn;
+		MQTTClientWrapper clientWrapper;
 
-		public SubscribeCallback(Pair<String, CallbackConnection> conn) {
-			this.conn = conn;
+		public SubscribeCallback(MQTTClientWrapper clientWrapper) {
+			super();
+			this.clientWrapper = clientWrapper;
 		}
 
 		@Override
-		public void onSuccess(byte[] value) {
+		public void onSuccess() throws Exception {
 			int subscriptionNum = numSubscriptionsEstablished.incrementAndGet();
-			activeConnections.add(conn);
-			connectionStatReporter.recordSubscriptionComp(conn.key);
+			activeConnections.add(clientWrapper);
+			connectionStatReporter.recordSubscriptionComp(clientWrapper.getConnectionId());
 
 			if (subscriptionNum == getConfig().getNumConnections()) {
 				endTimeMillis = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(getConfig().getDuration(), getConfig().getDurationUnit());
@@ -127,63 +114,22 @@ public class ConnectionIncreasingMQTTPublisher extends AbstractSender<byte[], Co
 		}
 
 		@Override
-		public void onFailure(Throwable value) {
-			logger.error(value);
+		public void onFailure() throws Exception {
+			logger.error("Connection " + clientWrapper.getConnectionId() + " could not be established");
+			numConnectionsInitiated.decrementAndGet();
 		}
 
 	};
 
-	private ExtendedListener connectionListener = new ExtendedListener() {
+	private MQTTClientCallback publishCb = new MQTTClientCallback() {
 
 		@Override
-		public void onPublish(UTF8Buffer topic, Buffer body, Runnable ack) {
-			log(topic, body);
-			ack.run();
-		}
-
-		@Override
-		public void onFailure(Throwable value) {
-			// TODO Auto-generated method stub
-
-		}
-
-		@Override
-		public void onDisconnected() {
-			// TODO Auto-generated method stub
-
-		}
-
-		@Override
-		public void onConnected() {
-			// TODO Auto-generated method stub
-
-		}
-
-		@Override
-		public void onPublish(UTF8Buffer topic, Buffer body, Callback<Callback<Void>> ack) {
-			log(topic, body);
-			ack.onSuccess(null);
-		}
-
-		private void log(UTF8Buffer topic, Buffer body) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Received a reply on connection=" + topic + " for message id=" + Payload.extractMessageId(body.toByteArray()));
-			}
-
-			repliedCount.incrementAndGet();
-		}
-
-	};
-
-	private Callback<Void> publishCallback = new Callback<Void>() {
-
-		@Override
-		public void onSuccess(Void value) {
+		public void onSuccess() throws Exception {
 			successCount.incrementAndGet();
 		}
 
 		@Override
-		public void onFailure(Throwable value) {
+		public void onFailure() throws Exception {
 			failureCount.incrementAndGet();
 		}
 
@@ -203,7 +149,7 @@ public class ConnectionIncreasingMQTTPublisher extends AbstractSender<byte[], Co
 			payloads.add(RandomXmlGenerator.generate(getConfig().getMessageByteLength()));
 		}
 
-		activeConnections = new ArrayBlockingQueue<Pair<String, CallbackConnection>>(getConfig().getNumConnections());
+		activeConnections = new ArrayBlockingQueue<MQTTClientWrapper>(getConfig().getNumConnections());
 
 		if (getConfig().isTrace()) {
 			tracers = Collections.synchronizedList(new ArrayList<MQTTFlightTracer>(getConfig().getNumConnections()));
@@ -232,41 +178,45 @@ public class ConnectionIncreasingMQTTPublisher extends AbstractSender<byte[], Co
 				}
 
 				for (int i = 0; i < getConfig().getConnectionStepSize() && i < getConfig().getNumConnections() - numConnectionsInitiated.get(); i++) {
-					MQTT client = new MQTT();
 					Broker broker = getNextBroker();
 
-					try {
-						client.setHost(MQTTClientFactory.getFusesourceConnectionUrl(broker, getConfig().isSsl()));
-					} catch (URISyntaxException e) {
-						throw new RuntimeException(e);
-					}
-
+					MQTTClientWrapper clientWrapper = null;
 					String connectionId = uuid + "-" + numConnectionsInitiated.getAndIncrement();
-					client.setClientId(connectionId);
-					client.setCleanSession(getConfig().isCleanSession());
-					client.setUserName(broker.getUsername());
-					client.setPassword(broker.getPassword());
-					client.setKeepAlive((short) (getConfig().getKeepAliveIntervalMilli() / 1000));
 
-					if (getConfig().isSsl()) {
-						try {
-							client.setSslContext(SSLUtil.createSSLContext(getConfig().getKeyStore(), getConfig().getKeyStorePassword(), getConfig().getTrustStore(), getConfig()
-									.getTrustStorePassword()));
-						} catch (Exception e) {
-							throw new RuntimeException(e);
-						}
-					}
-
-					if (getConfig().isTrace()) {
+					if (MQTTClientFactory.ClientType.FUSESOURCE.equals(getConfig().getClientType())) {
 						MQTTFlightTracer tracer = new MQTTFlightTracer();
-						client.setTracer(tracer);
 						tracers.add(tracer);
+
+						clientWrapper = MQTTClientFactory.createFuseSourceMQTTClient(broker, connectionId, getConfig().isSsl(), getConfig().isCleanSession(),
+								getConfig().getKeepAliveIntervalMilli() / 1000, tracer);
+
+					} else if (MQTTClientFactory.ClientType.PAHO.equals(getConfig().getClientType())) {
+						try {
+							clientWrapper = MQTTClientFactory.createPahoMQTTClient(broker, connectionId, getConfig().isSsl(), getConfig().isCleanSession(),
+									getConfig().getKeepAliveIntervalMilli() / 1000);
+						} catch (MqttException e) {
+							logger.error("Failed to initialize a Paho MQTT client", e);
+						}
+					} else {
+						throw new IllegalArgumentException("Unknown MQTT client type");
 					}
 
-					CallbackConnection conn = client.callbackConnection();
-					conn.listener(connectionListener);
-					conn.connect(new ConnectCallback(client, conn));
-					connectionStatReporter.recordConnectionInit(connectionId);
+					clientWrapper.onMessage(new Runnable() {
+
+						@Override
+						public void run() {
+							repliedCount.incrementAndGet();
+						}
+
+					});
+
+					try {
+						clientWrapper.connect(new ConnectCallback(clientWrapper));
+					} catch (Exception e) {
+						logger.error("Exception while connecting", e);
+					}
+
+					connectionStatReporter.recordConnectionInit(clientWrapper.getConnectionId());
 				}
 			}
 
@@ -278,17 +228,17 @@ public class ConnectionIncreasingMQTTPublisher extends AbstractSender<byte[], Co
 
 			@Override
 			public void run(int index, byte[] payload) throws Exception {
-				Pair<String, CallbackConnection> conn = activeConnections.take();
+				MQTTClientWrapper clientWrapper = activeConnections.take();
 
 				if (logger.isDebugEnabled()) {
-					logger.debug("Publishing a message using the connection " + conn.key);
+					logger.debug("Publishing a message using the connection " + clientWrapper.getConnectionId());
 				}
 
-				conn.value.publish(getConfig().getTopic(), Payload.toBytes(conn.key, Integer.toString(index), payload), getConfig().getQos(), false, publishCallback);
+				clientWrapper.publishAsync(getConfig().getTopic(), Payload.toBytes(clientWrapper.getConnectionId(), Integer.toString(index), payload), getConfig().getQos(), false, publishCb);
 				publishedCount.incrementAndGet();
 
 				// Put the connection back into the tail of the blocking queue so it can be reused
-				activeConnections.put(conn);
+				activeConnections.put(clientWrapper);
 			}
 
 		}, new PayloadIterator<byte[]>() {
@@ -335,8 +285,8 @@ public class ConnectionIncreasingMQTTPublisher extends AbstractSender<byte[], Co
 			}
 
 			synchronized (activeConnections) {
-				for (Pair<String, CallbackConnection> conn : activeConnections) {
-					conn.value.kill(null);
+				for (MQTTClientWrapper clientWrapper : activeConnections) {
+					clientWrapper.disconnect();
 				}
 			}
 		}

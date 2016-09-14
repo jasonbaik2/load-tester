@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import me.jasonbaik.loadtester.reporter.Reportable;
@@ -30,6 +31,7 @@ public class MQTTFlightTracer extends Tracer implements Reportable<ReportData> {
 	private static final Logger logger = LogManager.getLogger(MQTTFlightTracer.class);
 
 	private ConcurrentLinkedQueue<MQTTFlightStat> flightStats = new ConcurrentLinkedQueue<MQTTFlightStat>();
+	private ConcurrentHashMap<String, Long> replyTimes = new ConcurrentHashMap<String, Long>();
 
 	@Override
 	public void onSend(MQTTFrame frame) {
@@ -119,6 +121,24 @@ public class MQTTFlightTracer extends Tracer implements Reportable<ReportData> {
 			} catch (ProtocolException e) {
 				logger.error(e);
 			}
+		} else if (frame.messageType() == PUBLISH.TYPE) {
+			try {
+				PUBLISH pub = new PUBLISH().decode(frame);
+
+				String[] idPair;
+
+				try {
+					idPair = Payload.extractIdPair(pub.payload());
+				} catch (IOException e) {
+					logger.error("Failed to parse PUBLISH payload", e);
+					return;
+				}
+
+				replyTimes.put(idPair[0] + "-" + idPair[1], System.currentTimeMillis());
+
+			} catch (ProtocolException e) {
+				logger.error(e);
+			}
 		}
 	}
 
@@ -168,6 +188,12 @@ public class MQTTFlightTracer extends Tracer implements Reportable<ReportData> {
 				d.setPubTimeMillis(s.currentTimeMillis);
 				d.setPubTime(s.nanoTime);
 
+				Long replyTime = replyTimes.get(s.messageId);
+
+				if (null != replyTime) {
+					d.setReplyTime(replyTime);
+				}
+
 			} else if (s.type == PUBREL.TYPE) {
 				d.setPubRelSendTime(s.nanoTime);
 
@@ -196,7 +222,7 @@ public class MQTTFlightTracer extends Tracer implements Reportable<ReportData> {
 	}
 
 	public static byte[] toCsv(Collection<MQTTFlightData> flightData) {
-		StringBuilder sb = new StringBuilder("MessageId,PubTimeMillis,PubTime,PubAckReceiveTime,PubRecReceiveTime,PubRelSendTime,PubCompReceiveTime\n");
+		StringBuilder sb = new StringBuilder("MessageId,PubTimeMillis,PubTime,PubAckReceiveTime,PubRecReceiveTime,PubRelSendTime,PubCompReceiveTime,ReplyTime\n");
 
 		for (MQTTFlightData temp : flightData) {
 			sb.append(temp.getMessageId());
@@ -212,6 +238,8 @@ public class MQTTFlightTracer extends Tracer implements Reportable<ReportData> {
 			sb.append(Long.toString(temp.getPubRelSendTime()));
 			sb.append(", ");
 			sb.append(Long.toString(temp.getPubCompReceiveTime()));
+			sb.append(", ");
+			sb.append(Long.toString(temp.getReplyTime()));
 			sb.append("\n");
 		}
 

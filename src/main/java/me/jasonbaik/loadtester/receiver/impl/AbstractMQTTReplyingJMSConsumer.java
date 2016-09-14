@@ -33,7 +33,6 @@ import me.jasonbaik.loadtester.valueobject.Protocol;
 import me.jasonbaik.loadtester.valueobject.ReportData;
 
 import org.apache.activemq.ActiveMQConnection;
-import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -42,7 +41,6 @@ public abstract class AbstractMQTTReplyingJMSConsumer<T extends AbstractMQTTRepl
 	private static final Logger logger = LogManager.getLogger(AbstractMQTTReplyingJMSConsumer.class);
 
 	private String uuid = UUID.randomUUID().toString();
-	private ActiveMQConnectionFactory connFactory;
 	private List<Connection> conns;
 	private Map<String, Long> inTimes = Collections.synchronizedMap(new HashMap<String, Long>());
 

@@ -18,6 +18,32 @@
 
 	<bean id="controller" class="me.jasonbaik.loadtester.BrokerLoadTestController" parent="node" init-method="init" lazy-init="true" />
 
+	<bean id="brokerBase" class="me.jasonbaik.loadtester.valueobject.Broker" abstract="true">
+		<property name="username" value="admin" />
+		<property name="password" value="admin" />
+		<property name="keyStore" value="keystore/client.ks" />
+		<property name="keyStorePassword" value="password" />
+		<property name="trustStore" value="keystore/client.ks" />
+		<property name="trustStorePassword" value="password" />
+		<property name="sslProperties" ref="sslProperties" />
+		<property name="connectors" ref="connectors" />
+	</bean>
+
+	<util:map id="connectors">
+		<entry key="MQTT">
+			<bean class="me.jasonbaik.loadtester.valueobject.Connector">
+				<property name="protocol" value="MQTT" />
+				<property name="port" value="1883" />
+			</bean>
+		</entry>
+		<entry key="JMS">
+			<bean class="me.jasonbaik.loadtester.valueobject.Connector">
+				<property name="protocol" value="JMS" />
+				<property name="port" value="61616" />
+			</bean>
+		</entry>
+	</util:map>
+
 	<util:map id="sslProperties">
 		<entry key="com.ibm.ssl.protocol" value="TLSv1.2" />
 		<entry key="com.ibm.ssl.keyStore" value="keystore/client.ks" />

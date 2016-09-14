@@ -5,36 +5,18 @@
        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
        http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
 
-	<util:map id="connectors">
-		<entry key="MQTT">
-			<bean class="me.jasonbaik.loadtester.valueobject.Connector">
-				<property name="protocol" value="MQTT" />
-				<property name="port" value="1883" />
-			</bean>
-		</entry>
-		<entry key="JMS">
-			<bean class="me.jasonbaik.loadtester.valueobject.Connector">
-				<property name="protocol" value="JMS" />
-				<property name="port" value="61616" />
-			</bean>
-		</entry>
-	</util:map>
-
 	<bean id="senderConfig" class="me.jasonbaik.loadtester.sender.impl.ConnectionIncreasingMQTTPublisherConfig">
 		<property name="brokers" ref="brokers" />
+		<property name="clientType" value="PAHO" />
 		<property name="ssl" value="true" />
 		<property name="trace" value="true" />
-		<property name="keyStore" value="keystore/client.ks" />
-		<property name="keyStorePassword" value="password" />
-		<property name="trustStore" value="keystore/client.ks" />
-		<property name="trustStorePassword" value="password" />
 		<property name="numConnections" value="5000" />
 		<property name="newConnectionInterval" value="12" />
 		<property name="newConnectionIntervalUnit" value="MILLISECONDS" />
 		<property name="connectionStepSize" value="1" />
 		<property name="messagePoolSize" value="5000" />
 		<property name="messageByteLength" value="1024" />
-		<property name="qos" value="EXACTLY_ONCE" />
+		<property name="qos" value="2" />
 		<property name="cleanSession" value="true" />
 		<property name="keepAliveIntervalMilli" value="0" />
 		<property name="topic" value="mqtt/attack" />

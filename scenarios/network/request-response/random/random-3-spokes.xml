@@ -8,26 +8,17 @@
 	<import resource="base.xml" />
 
 	<util:list id="brokers" value-type="me.jasonbaik.loadtester.valueobject.Broker">
-		<bean class="me.jasonbaik.loadtester.valueobject.Broker">
+		<bean class="me.jasonbaik.loadtester.valueobject.Broker" parent="brokerBase">
 			<property name="hostname" value="172.31.5.252" />
 			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://172.31.5.252:1099/karaf-root" />
-			<property name="username" value="admin" />
-			<property name="password" value="admin" />
-			<property name="connectors" ref="connectors" />
 		</bean>
-		<bean class="me.jasonbaik.loadtester.valueobject.Broker">
+		<bean class="me.jasonbaik.loadtester.valueobject.Broker" parent="brokerBase">
 			<property name="hostname" value="172.31.13.122" />
 			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://172.31.13.122:1099/karaf-root" />
-			<property name="username" value="admin" />
-			<property name="password" value="admin" />
-			<property name="connectors" ref="connectors" />
 		</bean>
-		<bean class="me.jasonbaik.loadtester.valueobject.Broker">
+		<bean class="me.jasonbaik.loadtester.valueobject.Broker" parent="brokerBase">
 			<property name="hostname" value="172.31.14.98" />
 			<property name="jmxUrl" value="service:jmx:rmi:///jndi/rmi://172.31.14.98:1099/karaf-root" />
-			<property name="username" value="admin" />
-			<property name="password" value="admin" />
-			<property name="connectors" ref="connectors" />
 		</bean>
 	</util:list>
 

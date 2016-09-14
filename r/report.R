@@ -81,6 +81,13 @@ report <- function (reportDir, reportFile, sends, receives, threadFiles, gcFiles
   xlim = c(max(min(x), xMin), min(max(x), xMax))
 
   sendDataSubset = subset(sendDataSubset, xlim[1] * 10^9 < sendDataSubset$PubTime & sendDataSubset$PubTime < xlim[2] * 10^9)
+  sendDataSubsetQueueIn = subset(sendDataSubsetQueueIn, xlim[1] * 10^9 < sendDataSubsetQueueIn$JMSActiveMQBrokerInTime & sendDataSubsetQueueIn$JMSActiveMQBrokerInTime < xlim[2] * 10^9)
+  sendDataSubsetRec = subset(sendDataSubsetRec, xlim[1] * 10^9 < sendDataSubsetRec$PubRecReceiveTime & sendDataSubsetRec$PubRecReceiveTime < xlim[2] * 10^9)
+  sendDataSubsetComp = subset(sendDataSubsetComp, xlim[1] * 10^9 < sendDataSubsetComp$PubCompReceiveTime & sendDataSubsetComp$PubCompReceiveTime < xlim[2] * 10^9)
+  
+  receiveDataSubset = subset(receiveDataSubset, xlim[1] * 10^9 < receiveDataSubset$PubTime & receiveDataSubset$PubTime < xlim[2] * 10^9)
+  receiveDataSubsetRec = subset(receiveDataSubsetRec, xlim[1] * 10^9 < receiveDataSubsetRec$PubRecReceiveTime & receiveDataSubsetRec$PubRecReceiveTime < xlim[2] * 10^9)
+  receiveDataSubsetComp = subset(receiveDataSubsetComp, xlim[1] * 10^9 < receiveDataSubsetComp$PubCompReceiveTime & receiveDataSubsetComp$PubCompReceiveTime < xlim[2] * 10^9)
   
   #########################
   # Plot Throughput and Latency
@@ -125,7 +132,7 @@ report <- function (reportDir, reportFile, sends, receives, threadFiles, gcFiles
   plotThroughput(receiveDataSubsetComp$PubCompReceiveTime, "Reply Comp Rate (msg/s)", x, xlim, xMarks, avgPeriod)
   plotLatencyDistribution(replyPubCompLatencies, main = "Latency Distribution (%)")
 
-  mtext("N-to-1 Pub, 1-to-1 Sub", outer = TRUE, cex = 1, line=1)
+  mtext("Throughput & Latency", outer = TRUE, cex = 1, line=1)
 
   attach(mtcars)
   layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,14), 7, 2, byrow = TRUE), widths=c(3,2))
@@ -136,7 +143,7 @@ report <- function (reportDir, reportFile, sends, receives, threadFiles, gcFiles
   # Plot Connections
   #########################
   
-  connectionDataSuccess = subset(connectionData, !is.na(connectionData$conn_comp & connectionData$conn_comp / 10^3 < xlim[2]))
+  connectionDataSuccess = subset(connectionData, !is.na(connectionData$conn_comp) & connectionData$conn_comp / 10^3 < xlim[2])
   
   # Connection count scatter plot
   connectionDataSuccess = connectionDataSuccess[with(connectionDataSuccess, order(conn_comp)),]
@@ -170,7 +177,7 @@ report <- function (reportDir, reportFile, sends, receives, threadFiles, gcFiles
   # Plot Subscriptions
   #########################
   
-  subscriptionDataSuccess = subset(connectionDataSuccess, !is.na(connectionDataSuccess$sub_comp & connectionDataSuccess$sub_comp / 10^3 < xlim[2]))
+  subscriptionDataSuccess = subset(connectionDataSuccess, !is.na(connectionDataSuccess$sub_comp) & connectionDataSuccess$sub_comp / 10^3 < xlim[2])
   
   # Connection count scatter plot
   subscriptionDataSuccess = subscriptionDataSuccess[with(subscriptionDataSuccess, order(sub_comp)),]
@@ -215,6 +222,13 @@ report <- function (reportDir, reportFile, sends, receives, threadFiles, gcFiles
     mtext(text = paste("Max:", max(threadCountData$threadCount)), line = 0, at = 0.1, adj = 0, cex=0.8)
   }
   
+  mtext("Connection-Subscription Rate & Thread Growth", outer = TRUE, cex = 1, line=1)
+  
+  attach(mtcars)
+  layout(matrix(c(1,2,3,4,5,6,7,8,9,10,11,12,13,14), 7, 2, byrow = TRUE), widths=c(3,2))
+  par(mar=c(2,4,2,2))
+  par(oma = c(0,0,3,0))
+  
   #########################
   # Plot GC
   #########################
@@ -235,20 +249,33 @@ report <- function (reportDir, reportFile, sends, receives, threadFiles, gcFiles
     mtext(text = paste("Max Heap Size:", round(max(c(max(gcData$heapBefore),max(fullGcData$heapBefore)))/1024, digits=2), "MB"), line = -2, at = 0.1, adj = 0, cex=0.8)
   }
   
+  mtext("Garbage Collection", outer = TRUE, cex = 1, line=1)
+  
   dev.off()
 }
 
-setwd(dir = "C:/Users/HCC5fkv/git_repo/load-tester-github/load-tester/r")
-reportDir = "D:/report/n_1_publish_1_1_subscribe_max_connections_2016_08_05_18_50_13"
-startTime = "2016-08-05 18:46:40,138"
+setwd(dir = "E:/repo_git/load-tester/r")
+reportDir = "E:/repo_git/report/random_networked_4_spokes_2016_08_19_17_15_04"
+startTime = "2016-08-19 16:54:26,96"
+
+# reportDir = "E:/repo_git/report/random_networked_3_spokes_2016_08_20_00_22_59"
+# startTime = "2016-08-19 23:57:57,184"
+
+# reportDir = "E:/repo_git/report/random_networked_2_spokes_2016_08_19_19_33_00"
+# startTime = "2016-08-19 19:15:10,224"
+
+# reportDir = "E:/repo_git/report/random_networked_1_spokes_2016_08_19_23_20_15"
+# startTime = "2016-08-19 23:15:44,080"
 
 sends = c("send1", "send2", "send3", "send4")
-receives = c("receive1","receive2","receive3","receive4")
-threadFiles = c("Broker_Thread_Count_Stats_172.31.5.252.csv")
-gcFiles = c("spoke1_gc.log")#,"spoke2_gc.log","spoke3_gc.log","spoke4_gc.log")
-fullGcFiles = c("spoke1_full_gc.log")#,"spoke2_full_gc.log","spoke3_full_gc.log","spoke4_full_gc.log")
+receives = c("receive1")
+threadFiles = c("Broker_Thread_Count_Stats_172.31.5.252.csv", "Broker_Thread_Count_Stats_172.31.13.122.csv", "Broker_Thread_Count_Stats_172.31.14.98.csv", "Broker_Thread_Count_Stats_172.31.3.235.csv")
+gcFiles = c("spoke1_gc.log","spoke2_gc.log","spoke3_gc.log","spoke4_gc.log")
+fullGcFiles = c("spoke1_full_gc.log","spoke2_full_gc.log","spoke3_full_gc.log","spoke4_full_gc.log")
 startTimeEpochMillis = as.numeric(as.POSIXlt(startTime)) * 10^3
 xMin = -.Machine$integer.max
 xMax = .Machine$integer.max
+# xMin = 0
+xMax = 65
 
-report(reportDir, paste(sep="/", reportDir, "report.pdf"), sends, receives, threadFiles, gcFiles, fullGcFiles, startTimeEpochMillis, xMin, xMax)
+report(reportDir, paste(sep="/", reportDir, "report_transient.pdf"), sends, receives, threadFiles, gcFiles, fullGcFiles, startTimeEpochMillis, xMin, xMax)

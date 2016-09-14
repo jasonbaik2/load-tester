@@ -27,9 +27,9 @@ plotThroughput <- function(data, main, x, xlim, xMarks, avgPeriod){
   yMarks = seq(from = 0 , to = yMarkMax, by = yMarkMax/20)
   plot(x, y, main=main, axes=FALSE, xlim = xlim, ylim = c(0, yMarkMax), xlab="Second (s)", ylab="msg/s", pch = 1, type = "l", cex = 0.1)
   duration = round((max(data) - min(data)) / 10^9, digits=1)
-  avgThroughput = numMsgs / (max(data) - min(data)) * 10^9
+  avgThroughput = numMsgs / (xlim[2] - xlim[1]) * 10^9
   abline(h = avgThroughput, col="red", cex = 0.1)
-  text(max(x) * 0.75, avgThroughput, labels=paste("mean =", round(avgThroughput,2), "msg/s"), pos=3)
+  text(max(xlim[2]) * 0.75, avgThroughput, labels=paste("mean =", round(avgThroughput,2), "msg/s"), pos=3)
   legend("topright",legend = c(paste("avgPeriod =", avgPeriod, "s"), paste(sep="", "avgPeriod =", duration, "s")), lwd = 1, col=c("black", "red"), cex = 0.5)
   axis(1, at=xMarks, labels=format(xMarks, scientific=FALSE, digits = 0))
   axis(2, at=yMarks, labels=format(yMarks, scientific=FALSE, digits = 0))

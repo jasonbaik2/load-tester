@@ -12,6 +12,13 @@ public class Broker implements Serializable {
 	private String username;
 	private String password;
 
+	private String keyStore;
+	private String keyStorePassword;
+	private String trustStore;
+	private String trustStorePassword;
+
+	private Map<String, String> sslProperties;
+
 	private Map<Protocol, Connector> connectors;
 
 	public String getJmxUrl() {
@@ -54,9 +61,50 @@ public class Broker implements Serializable {
 		this.hostname = hostname;
 	}
 
+	public String getKeyStore() {
+		return keyStore;
+	}
+
+	public void setKeyStore(String keyStore) {
+		this.keyStore = keyStore;
+	}
+
+	public String getKeyStorePassword() {
+		return keyStorePassword;
+	}
+
+	public void setKeyStorePassword(String keyStorePassword) {
+		this.keyStorePassword = keyStorePassword;
+	}
+
+	public String getTrustStore() {
+		return trustStore;
+	}
+
+	public void setTrustStore(String trustStore) {
+		this.trustStore = trustStore;
+	}
+
+	public String getTrustStorePassword() {
+		return trustStorePassword;
+	}
+
+	public void setTrustStorePassword(String trustStorePassword) {
+		this.trustStorePassword = trustStorePassword;
+	}
+
+	public Map<String, String> getSslProperties() {
+		return sslProperties;
+	}
+
+	public void setSslProperties(Map<String, String> sslProperties) {
+		this.sslProperties = sslProperties;
+	}
+
 	@Override
 	public String toString() {
-		return "Broker [hostname=" + hostname + ", jmxUrl=" + jmxUrl + ", username=" + username + ", password=" + password + ", connectors=" + connectors + "]";
+		return "Broker [hostname=" + hostname + ", jmxUrl=" + jmxUrl + ", username=" + username + ", password=" + password + ", keyStore=" + keyStore + ", keyStorePassword=" + keyStorePassword
+				+ ", trustStore=" + trustStore + ", trustStorePassword=" + trustStorePassword + ", sslProperties=" + sslProperties + ", connectors=" + connectors + "]";
 	}
 
 }

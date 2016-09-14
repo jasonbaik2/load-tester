@@ -6,7 +6,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 import me.jasonbaik.loadtester.client.MQTTClientFactory;
 import me.jasonbaik.loadtester.reporter.impl.ConnectionStatReporter;
@@ -197,11 +196,7 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 			}
 		}
 
-		while (!connectionLatch.await(10, TimeUnit.SECONDS)) {
-			logger.info(connectionLatch.getCount() + " connections are still yet to be established");
-			logger.info("Waiting another 10 seconds until all connections are established");
-		}
-
+		connectionLatch.await();
 		logger.info("Successfully established all " + getConfig().getNumConnections() + " connections");
 	}
 
@@ -266,6 +261,8 @@ public class RoundRobinMQTTPublisher extends AbstractRoundRobinMQTTPublisher<Rou
 		System.out.print(getSuccessCount());
 		System.out.print(", Failed: ");
 		System.out.print(getFailureCount());
+		System.out.print(", Connections: ");
+		System.out.print(getConfig().getNumConnections() - connectionLatch.getCount());
 		System.out.print("\n");
 	}
 
