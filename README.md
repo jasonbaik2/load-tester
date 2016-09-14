@@ -1,6 +1,6 @@
-# load-tester
+# mqtt-broker-tester
 
-This simple load tester was created to test Red Hat A-MQ 6.2.1 as an MQTT broker, and to produce the test results shown on https://jasonbaik.me/blog/2016/6/ActiveMQ-as-an-MQTT-Broker.
+This simple load tester was created to test Red Hat A-MQ 6.2.1 as an MQTT broker, and to produce the test results shown on https://jasonbaik.me/blog/2016/8/Using-A-MQ-6-2-1-ActiveMQ-5-14-as-an-MQTT-Broker-Part-1.
 
 ## How To Run a Test
 
