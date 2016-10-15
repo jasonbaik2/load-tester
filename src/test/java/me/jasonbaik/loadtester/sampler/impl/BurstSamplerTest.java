@@ -2,13 +2,10 @@ package me.jasonbaik.loadtester.sampler.impl;
 
 import java.util.concurrent.TimeUnit;
 
-import me.jasonbaik.loadtester.sampler.PayloadIterator;
-import me.jasonbaik.loadtester.sampler.SamplerTask;
-import me.jasonbaik.loadtester.sampler.impl.BurstSampler;
-import me.jasonbaik.loadtester.sampler.impl.BurstSamplerConfig;
-
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.Iterator;
 
 public class BurstSamplerTest {
 
@@ -19,21 +16,16 @@ public class BurstSamplerTest {
 		int interval = 2;
 		int burstCount = 10;
 
-		BurstSamplerConfig config = new BurstSamplerConfig();
+		FixedCountBurstSamplerConfig config = new FixedCountBurstSamplerConfig();
 		config.setBurstCount(burstCount);
 		config.setBurstInterval(interval);
 		config.setBurstIntervalUnit(TimeUnit.SECONDS);
 
-		BurstSampler burstSampler = new BurstSampler(config);
-		burstSampler.forEach(new SamplerTask<byte[]>() {
-
-			@Override
-			public void run(int index, byte[] payload) throws Exception {
-				System.out.println("Sample #" + index + " running");
-				numRun++;
-			}
-
-		}, new PayloadIterator<byte[]>() {
+		FixedCountBurstSampler burstSampler = new FixedCountBurstSampler(config);
+		burstSampler.forEach((index, payload) -> {
+			System.out.println("Sample #" + index + " running");
+			numRun++;
+		}, new Iterator<byte[]>() {
 
 			@Override
 			public void remove() {
@@ -62,21 +54,16 @@ public class BurstSamplerTest {
 		int interval = 2;
 		int burstCount = 10;
 
-		BurstSamplerConfig config = new BurstSamplerConfig();
+		FixedCountBurstSamplerConfig config = new FixedCountBurstSamplerConfig();
 		config.setBurstCount(burstCount);
 		config.setBurstInterval(interval);
 		config.setBurstIntervalUnit(TimeUnit.SECONDS);
 
-		BurstSampler burstSampler = new BurstSampler(config);
-		burstSampler.during(new SamplerTask<byte[]>() {
-
-			@Override
-			public void run(int index, byte[] payload) throws Exception {
-				System.out.println("Sample #" + index + " running");
-				numRun++;
-			}
-
-		}, new PayloadIterator<byte[]>() {
+		FixedCountBurstSampler burstSampler = new FixedCountBurstSampler(config);
+		burstSampler.during((index, payload) -> {
+			System.out.println("Sample #" + index + " running");
+			numRun++;
+		}, new Iterator<byte[]>() {
 
 			@Override
 			public void remove() {

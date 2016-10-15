@@ -2,12 +2,12 @@ package me.jasonbaik.loadtester.receiver.impl;
 
 import java.util.List;
 
-import me.jasonbaik.loadtester.receiver.ReceiverConfig;
+import me.jasonbaik.loadtester.receiver.AbstractReceiverConfig;
 import me.jasonbaik.loadtester.valueobject.Broker;
 
 import org.fusesource.mqtt.client.QoS;
 
-public abstract class AbstractMQTTReplyingJMSConsumerConfig<T extends AbstractMQTTReplyingJMSConsumer<?>> extends ReceiverConfig<T> {
+public abstract class AbstractMQTTReplyingJMSConsumerConfig<T extends AbstractMQTTReplyingJMSConsumer<?>> extends AbstractReceiverConfig<T> {
 
 	private static final long serialVersionUID = 1L;
 

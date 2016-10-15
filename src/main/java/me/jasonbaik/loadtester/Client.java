@@ -21,21 +21,19 @@ import javax.jms.MessageListener;
 import javax.jms.Queue;
 import javax.xml.bind.JAXBException;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+
 import me.jasonbaik.loadtester.constant.StringConstants;
 import me.jasonbaik.loadtester.receiver.Receiver;
 import me.jasonbaik.loadtester.receiver.ReceiverFactory;
 import me.jasonbaik.loadtester.reporter.Loggable;
-import me.jasonbaik.loadtester.sampler.Sampler;
-import me.jasonbaik.loadtester.sampler.SamplerFactory;
 import me.jasonbaik.loadtester.sender.Sender;
 import me.jasonbaik.loadtester.sender.SenderFactory;
 import me.jasonbaik.loadtester.valueobject.Receive;
 import me.jasonbaik.loadtester.valueobject.ReportData;
 import me.jasonbaik.loadtester.valueobject.Send;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 public class Client<S1, R1> extends Node {
 
@@ -46,7 +44,6 @@ public class Client<S1, R1> extends Node {
 	private MessageConsumer clientTopicConsumer;
 
 	private volatile Sender<S1> sender;
-	private volatile Sampler<S1, ?> sampler;
 	private volatile Receiver receiver;
 
 	private volatile Thread attackThread;
@@ -67,10 +64,6 @@ public class Client<S1, R1> extends Node {
 		logger.info("Setting up a sender according to the test config: " + send.toString());
 
 		this.sender = SenderFactory.newInstance(send.getSenderConfig());
-
-		if (send.getSamplerConfig() != null) {
-			this.sampler = SamplerFactory.newInstance(send.getSamplerConfig());
-		}
 
 		logger.info("Successfully set up the sender");
 	}
@@ -95,7 +88,7 @@ public class Client<S1, R1> extends Node {
 					if (sender != null) {
 						logger.info("Sending...");
 						startStatusService(sender);
-						sender.send(sampler);
+						sender.send();
 					} else if (receiver != null) {
 						logger.info("Receiving...");
 						startStatusService(receiver);
@@ -197,10 +190,6 @@ public class Client<S1, R1> extends Node {
 			} catch (Exception e) {
 				logger.error("Failed to destroy the sender", e);
 			}
-		}
-
-		if (sampler != null) {
-			sampler.destroy();
 		}
 
 		if (receiver != null) {

@@ -3,10 +3,12 @@ package me.jasonbaik.loadtester.sender.impl;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import me.jasonbaik.loadtester.sender.SenderConfig;
+import me.jasonbaik.loadtester.sampler.AbstractSamplerConfig;
+import me.jasonbaik.loadtester.sampler.Sampler;
+import me.jasonbaik.loadtester.sender.AbstractSenderConfig;
 import me.jasonbaik.loadtester.valueobject.Broker;
 
-public abstract class AbstractRoundRobinMQTTPublisherConfig<T extends AbstractRoundRobinMQTTPublisher<? extends AbstractRoundRobinMQTTPublisherConfig<T>>> extends SenderConfig<T> {
+public abstract class AbstractRoundRobinMQTTPublisherConfig<T extends AbstractRoundRobinMQTTPublisher<? extends AbstractRoundRobinMQTTPublisherConfig<T>>> extends AbstractSenderConfig<T> {
 
 	private static final long serialVersionUID = 1L;
 
@@ -33,6 +35,8 @@ public abstract class AbstractRoundRobinMQTTPublisherConfig<T extends AbstractRo
 
 	private int connectionStepSize;
 	private long connectionStepIntervalMilli;
+
+	private AbstractSamplerConfig<Sampler<byte[]>> samplerConfig;
 
 	public int getNumConnections() {
 		return numConnections;
@@ -176,6 +180,14 @@ public abstract class AbstractRoundRobinMQTTPublisherConfig<T extends AbstractRo
 
 	public void setSsl(boolean ssl) {
 		this.ssl = ssl;
+	}
+
+	public AbstractSamplerConfig<Sampler<byte[]>> getSamplerConfig() {
+		return samplerConfig;
+	}
+
+	public void setSamplerConfig(AbstractSamplerConfig<Sampler<byte[]>> samplerConfig) {
+		this.samplerConfig = samplerConfig;
 	}
 
 }

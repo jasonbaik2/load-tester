@@ -13,18 +13,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import me.jasonbaik.loadtester.client.MQTTClientFactory;
-import me.jasonbaik.loadtester.reporter.impl.ConnectionStatReporter;
-import me.jasonbaik.loadtester.reporter.impl.MQTTFlightTracer;
-import me.jasonbaik.loadtester.sampler.Sampler;
-import me.jasonbaik.loadtester.sender.AbstractSender;
-import me.jasonbaik.loadtester.util.RandomXmlGenerator;
-import me.jasonbaik.loadtester.util.SSLUtil;
-import me.jasonbaik.loadtester.valueobject.Broker;
-import me.jasonbaik.loadtester.valueobject.MQTTFlightData;
-import me.jasonbaik.loadtester.valueobject.Payload;
-import me.jasonbaik.loadtester.valueobject.ReportData;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.fusesource.hawtbuf.Buffer;
@@ -34,6 +22,17 @@ import org.fusesource.mqtt.client.CallbackConnection;
 import org.fusesource.mqtt.client.ExtendedListener;
 import org.fusesource.mqtt.client.MQTT;
 import org.fusesource.mqtt.client.Topic;
+
+import me.jasonbaik.loadtester.client.MQTTClientFactory;
+import me.jasonbaik.loadtester.reporter.impl.ConnectionStatReporter;
+import me.jasonbaik.loadtester.reporter.impl.MQTTFlightTracer;
+import me.jasonbaik.loadtester.sender.AbstractSender;
+import me.jasonbaik.loadtester.util.RandomXmlGenerator;
+import me.jasonbaik.loadtester.util.SSLUtil;
+import me.jasonbaik.loadtester.valueobject.Broker;
+import me.jasonbaik.loadtester.valueobject.MQTTFlightData;
+import me.jasonbaik.loadtester.valueobject.Payload;
+import me.jasonbaik.loadtester.valueobject.ReportData;
 
 public class FixedThroughputPerConnectionMQTTPublisher extends AbstractSender<byte[], FixedThroughputPerConnectionMQTTPublisherConfig> {
 
@@ -92,8 +91,8 @@ public class FixedThroughputPerConnectionMQTTPublisher extends AbstractSender<by
 			numConnectionsEstablished.incrementAndGet();
 			connectionStatReporter.recordConnectionComp(client.getClientId().toString());
 
-			conn.subscribe(new Topic[] { new Topic(client.getClientId().toString(), getConfig().getQos()) }, new SubscribeCallback(new Pair<String, CallbackConnection>(
-					client.getClientId().toString(), conn)));
+			conn.subscribe(new Topic[] { new Topic(client.getClientId().toString(), getConfig().getQos()) },
+					new SubscribeCallback(new Pair<String, CallbackConnection>(client.getClientId().toString(), conn)));
 			numSubscriptionsInitiated.incrementAndGet();
 		}
 
@@ -124,8 +123,8 @@ public class FixedThroughputPerConnectionMQTTPublisher extends AbstractSender<by
 
 			if (subscriptionNum == getConfig().getNumConnections()) {
 				endTimeMillis = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(getConfig().getDuration(), getConfig().getDurationUnit());
-				logger.info("All " + getConfig().getNumConnections() + " subscriptions have been established. The sender will publish the messages for an additional " + getConfig().getDuration()
-						+ " " + getConfig().getDurationUnit() + ", then terminate");
+				logger.info("All " + getConfig().getNumConnections() + " subscriptions have been established. The sender will publish the messages for an additional " + getConfig().getDuration() + " "
+						+ getConfig().getDurationUnit() + ", then terminate");
 				setState("Pub/Sub");
 			}
 		}
@@ -245,11 +244,7 @@ public class FixedThroughputPerConnectionMQTTPublisher extends AbstractSender<by
 	}
 
 	@Override
-	public void send(Sampler<byte[], ?> sampler) throws InterruptedException {
-		send();
-	}
-
-	private void send() throws InterruptedException {
+	public void send() throws InterruptedException {
 		setState("Conn/Pub/Sub");
 
 		// Start a thread that periodically creates more connections with the broker(s)
@@ -288,8 +283,8 @@ public class FixedThroughputPerConnectionMQTTPublisher extends AbstractSender<by
 
 					if (getConfig().isSsl()) {
 						try {
-							client.setSslContext(SSLUtil.createSSLContext(getConfig().getKeyStore(), getConfig().getKeyStorePassword(), getConfig().getTrustStore(), getConfig()
-									.getTrustStorePassword()));
+							client.setSslContext(
+									SSLUtil.createSSLContext(getConfig().getKeyStore(), getConfig().getKeyStorePassword(), getConfig().getTrustStore(), getConfig().getTrustStorePassword()));
 						} catch (Exception e) {
 							throw new RuntimeException(e);
 						}

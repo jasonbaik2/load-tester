@@ -1,31 +1,27 @@
 package me.jasonbaik.loadtester.sampler.impl;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
-import me.jasonbaik.loadtester.sampler.PayloadIterator;
-import me.jasonbaik.loadtester.sampler.Sampler;
-import me.jasonbaik.loadtester.sampler.SamplerTask;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class RandomSampler extends Sampler<byte[], RandomSamplerConfig> {
+import me.jasonbaik.loadtester.sampler.AbstractFixedCountSampler;
+import me.jasonbaik.loadtester.sampler.SamplerTask;
 
-	private static final Logger logger = LogManager.getLogger(RandomSampler.class);
+public class FixedCountRandomSampler extends AbstractFixedCountSampler<byte[], FixedCountRandomSamplerConfig> {
+
+	private static final Logger logger = LogManager.getLogger(FixedCountRandomSampler.class);
 
 	private Random random = new Random(System.nanoTime());
 
 	private volatile long startTime;
 
 	private DelayQueue<RandomlyDelayed> dq = new DelayQueue<RandomlyDelayed>();
-
-	public RandomSampler(RandomSamplerConfig config) {
-		super(config);
-	}
 
 	@Override
 	public void destroy() {
@@ -71,7 +67,7 @@ public class RandomSampler extends Sampler<byte[], RandomSamplerConfig> {
 	}
 
 	@Override
-	public void forEach(SamplerTask<byte[]> samplerTask, PayloadIterator<byte[]> payloadGenerator) throws InterruptedException {
+	public void forEach(SamplerTask<byte[]> samplerTask, Iterator<byte[]> payloadGenerator) throws InterruptedException {
 		logger.info("Running the task with random delays with an expected value of " + getConfig().getExpectedInterval() + " " + getConfig().getExpectedIntervalUnit());
 
 		long cumulativeDelay = 0;
@@ -97,91 +93,6 @@ public class RandomSampler extends Sampler<byte[], RandomSamplerConfig> {
 				logger.error("Failed to run the task for sample #" + index, e);
 			}
 		}
-	}
-
-	/**
-	 * The method assumes that the # of payloads is high enough (not exhausted) to support the specified duration
-	 * 
-	 * @param samplerTask
-	 * @param payloads
-	 * @param duration
-	 * @param unit
-	 * @throws InterruptedException
-	 */
-	@Override
-	public void during(SamplerTask<byte[]> samplerTask, List<byte[]> payloads, long duration, TimeUnit unit) throws InterruptedException {
-		generateRandomDelays(duration, unit);
-
-		startTime = System.currentTimeMillis();
-
-		for (int index = 0; !dq.isEmpty();) {
-			if (Thread.currentThread().isInterrupted()) {
-				throw new InterruptedException("Sampler thread interrupted");
-			}
-
-			try {
-				dq.take();
-
-				logger.debug("Running the task for sample#" + index);
-				samplerTask.run(index, payloads.get(index));
-				index++;
-
-			} catch (Exception e) {
-				logger.error("Failed to run the task for sample #" + index, e);
-			}
-		}
-
-		logger.info(getClass().getName() + " has finished running the task for all samples");
-	}
-
-	/**
-	 * The method assumes that the # of payloads is high enough (not exhausted) to support the specified duration
-	 * 
-	 * @param samplerTask
-	 * @param payloads
-	 * @param duration
-	 * @param unit
-	 * @throws InterruptedException
-	 */
-	@Override
-	public void during(SamplerTask<byte[]> samplerTask, PayloadIterator<byte[]> payloadGenerator, long duration, TimeUnit unit) throws InterruptedException {
-		generateRandomDelays(duration, unit);
-
-		startTime = System.currentTimeMillis();
-
-		for (int index = 0; !dq.isEmpty();) {
-			if (Thread.currentThread().isInterrupted()) {
-				throw new InterruptedException("Sampler thread interrupted");
-			}
-
-			try {
-				dq.take();
-
-				logger.debug("Running the task for sample#" + index);
-				samplerTask.run(index, payloadGenerator.next());
-				index++;
-
-			} catch (Exception e) {
-				logger.error("Failed to run the task for sample #" + index, e);
-			}
-		}
-
-		logger.info(getClass().getName() + " has finished running the task for all samples");
-	}
-
-	private void generateRandomDelays(long duration, TimeUnit unit) {
-		logger.info("Generating random delays that sum to " + duration + " " + unit);
-
-		int cumulativeDelay = 0;
-		long durationMillis = TimeUnit.MILLISECONDS.convert(duration, unit);
-
-		while (cumulativeDelay < durationMillis) {
-			long delay = randomDelay(getConfig().getExpectedInterval(), getConfig().getExpectedIntervalUnit());
-			cumulativeDelay += delay;
-			dq.add(new RandomlyDelayed(cumulativeDelay));
-		}
-
-		logger.info(dq.size() + " random delays generated");
 	}
 
 	private final class RandomlyDelayed implements Delayed {

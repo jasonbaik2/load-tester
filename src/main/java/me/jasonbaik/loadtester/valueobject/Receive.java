@@ -4,7 +4,7 @@ import java.io.Serializable;
 import java.util.List;
 
 import me.jasonbaik.loadtester.receiver.Receiver;
-import me.jasonbaik.loadtester.receiver.ReceiverConfig;
+import me.jasonbaik.loadtester.receiver.AbstractReceiverConfig;
 
 import org.springframework.beans.factory.annotation.Required;
 
@@ -13,15 +13,15 @@ public class Receive<T1> implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	private String name;
-	private ReceiverConfig<Receiver> receiverConfig;
+	private AbstractReceiverConfig<Receiver> receiverConfig;
 	private String clientUUID;
 	private List<ReportData> reportData;
 
-	public ReceiverConfig<Receiver> getReceiverConfig() {
+	public AbstractReceiverConfig<Receiver> getReceiverConfig() {
 		return receiverConfig;
 	}
 
-	public void setReceiverConfig(ReceiverConfig<Receiver> receiverConfig) {
+	public void setReceiverConfig(AbstractReceiverConfig<Receiver> receiverConfig) {
 		this.receiverConfig = receiverConfig;
 	}
 

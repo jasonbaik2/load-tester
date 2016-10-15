@@ -13,19 +13,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import me.jasonbaik.loadtester.client.MQTTClientFactory;
-import me.jasonbaik.loadtester.reporter.impl.ConnectionStatReporter;
-import me.jasonbaik.loadtester.reporter.impl.MQTTFlightTracer;
-import me.jasonbaik.loadtester.sampler.Sampler;
-import me.jasonbaik.loadtester.sender.AbstractSender;
-import me.jasonbaik.loadtester.util.RandomXmlGenerator;
-import me.jasonbaik.loadtester.util.SSLUtil;
-import me.jasonbaik.loadtester.valueobject.Broker;
-import me.jasonbaik.loadtester.valueobject.KeyValuePair;
-import me.jasonbaik.loadtester.valueobject.MQTTFlightData;
-import me.jasonbaik.loadtester.valueobject.Payload;
-import me.jasonbaik.loadtester.valueobject.ReportData;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.fusesource.hawtbuf.Buffer;
@@ -35,6 +22,18 @@ import org.fusesource.mqtt.client.CallbackConnection;
 import org.fusesource.mqtt.client.ExtendedListener;
 import org.fusesource.mqtt.client.MQTT;
 import org.fusesource.mqtt.client.Topic;
+
+import me.jasonbaik.loadtester.client.MQTTClientFactory;
+import me.jasonbaik.loadtester.reporter.impl.ConnectionStatReporter;
+import me.jasonbaik.loadtester.reporter.impl.MQTTFlightTracer;
+import me.jasonbaik.loadtester.sender.AbstractSender;
+import me.jasonbaik.loadtester.util.RandomXmlGenerator;
+import me.jasonbaik.loadtester.util.SSLUtil;
+import me.jasonbaik.loadtester.valueobject.Broker;
+import me.jasonbaik.loadtester.valueobject.KeyValuePair;
+import me.jasonbaik.loadtester.valueobject.MQTTFlightData;
+import me.jasonbaik.loadtester.valueobject.Payload;
+import me.jasonbaik.loadtester.valueobject.ReportData;
 
 public class ThroughputIncreasingMQTTPublisher extends AbstractSender<byte[], ThroughputIncreasingMQTTPublisherConfig> {
 
@@ -71,8 +70,8 @@ public class ThroughputIncreasingMQTTPublisher extends AbstractSender<byte[], Th
 		@Override
 		public void onSuccess(Void value) {
 			connectionStatReporter.recordConnectionComp(client.getClientId().toString());
-			conn.subscribe(new Topic[] { new Topic(client.getClientId().toString(), getConfig().getQos()) }, new SubscribeCallback(new KeyValuePair<String, CallbackConnection>(client.getClientId()
-					.toString(), conn)));
+			conn.subscribe(new Topic[] { new Topic(client.getClientId().toString(), getConfig().getQos()) },
+					new SubscribeCallback(new KeyValuePair<String, CallbackConnection>(client.getClientId().toString(), conn)));
 			connectionStatReporter.recordSubscriptionInit(client.getClientId().toString());
 		}
 
@@ -185,11 +184,7 @@ public class ThroughputIncreasingMQTTPublisher extends AbstractSender<byte[], Th
 	}
 
 	@Override
-	public void send(Sampler<byte[], ?> sampler) throws InterruptedException {
-		send();
-	}
-
-	private void send() throws InterruptedException {
+	public void send() throws InterruptedException {
 		connectionLatch = new CountDownLatch(getConfig().getNumConnections());
 
 		for (int i = 0; i < getConfig().getNumConnections(); i++) {

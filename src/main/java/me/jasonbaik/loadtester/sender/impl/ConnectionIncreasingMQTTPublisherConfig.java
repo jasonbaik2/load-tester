@@ -4,10 +4,12 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.jasonbaik.loadtester.client.MQTTClientFactory.ClientType;
-import me.jasonbaik.loadtester.sender.SenderConfig;
+import me.jasonbaik.loadtester.sampler.AbstractSamplerConfig;
+import me.jasonbaik.loadtester.sampler.Sampler;
+import me.jasonbaik.loadtester.sender.AbstractSenderConfig;
 import me.jasonbaik.loadtester.valueobject.Broker;
 
-public class ConnectionIncreasingMQTTPublisherConfig extends SenderConfig<ConnectionIncreasingMQTTPublisher> {
+public class ConnectionIncreasingMQTTPublisherConfig extends AbstractSenderConfig<ConnectionIncreasingMQTTPublisher> {
 
 	private static final long serialVersionUID = 1L;
 
@@ -33,6 +35,8 @@ public class ConnectionIncreasingMQTTPublisherConfig extends SenderConfig<Connec
 
 	private int duration;
 	private TimeUnit durationUnit;
+
+	private AbstractSamplerConfig<Sampler<byte[]>> samplerConfig;
 
 	@Override
 	public Class<ConnectionIncreasingMQTTPublisher> getSenderClass() {
@@ -185,6 +189,14 @@ public class ConnectionIncreasingMQTTPublisherConfig extends SenderConfig<Connec
 				+ messageByteLength + ", messagePoolSize=" + messagePoolSize + ", qos=" + qos + ", topic=" + topic + ", cleanSession=" + cleanSession + ", keepAliveIntervalMilli="
 				+ keepAliveIntervalMilli + ", numConnections=" + numConnections + ", newConnectionInterval=" + newConnectionInterval + ", newConnectionIntervalUnit=" + newConnectionIntervalUnit
 				+ ", connectionStepSize=" + connectionStepSize + ", duration=" + duration + ", durationUnit=" + durationUnit + "]";
+	}
+
+	public AbstractSamplerConfig<Sampler<byte[]>> getSamplerConfig() {
+		return samplerConfig;
+	}
+
+	public void setSamplerConfig(AbstractSamplerConfig<Sampler<byte[]>> samplerConfig) {
+		this.samplerConfig = samplerConfig;
 	}
 
 }

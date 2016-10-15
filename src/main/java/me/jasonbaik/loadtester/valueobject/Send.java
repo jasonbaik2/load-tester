@@ -3,34 +3,34 @@ package me.jasonbaik.loadtester.valueobject;
 import java.io.Serializable;
 import java.util.List;
 
-import me.jasonbaik.loadtester.sampler.Sampler;
-import me.jasonbaik.loadtester.sampler.SamplerConfig;
+import me.jasonbaik.loadtester.sampler.AbstractSampler;
+import me.jasonbaik.loadtester.sampler.AbstractSamplerConfig;
 import me.jasonbaik.loadtester.sender.Sender;
-import me.jasonbaik.loadtester.sender.SenderConfig;
+import me.jasonbaik.loadtester.sender.AbstractSenderConfig;
 
-public class Send<T1> implements Serializable {
+public class Send<T> implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
 	private String name;
-	private SamplerConfig<Sampler<T1, ?>> samplerConfig;
-	private SenderConfig<Sender<T1>> senderConfig;
+	private AbstractSamplerConfig<AbstractSampler<T, ?>> samplerConfig;
+	private AbstractSenderConfig<Sender<T>> senderConfig;
 	private String clientUUID;
 	private List<ReportData> reportData;
 
-	public SamplerConfig<Sampler<T1, ?>> getSamplerConfig() {
+	public AbstractSamplerConfig<AbstractSampler<T, ?>> getSamplerConfig() {
 		return samplerConfig;
 	}
 
-	public void setSamplerConfig(SamplerConfig<Sampler<T1, ?>> samplerConfig) {
+	public void setSamplerConfig(AbstractSamplerConfig<AbstractSampler<T, ?>> samplerConfig) {
 		this.samplerConfig = samplerConfig;
 	}
 
-	public SenderConfig<Sender<T1>> getSenderConfig() {
+	public AbstractSenderConfig<Sender<T>> getSenderConfig() {
 		return senderConfig;
 	}
 
-	public void setSenderConfig(SenderConfig<Sender<T1>> senderConfig) {
+	public void setSenderConfig(AbstractSenderConfig<Sender<T>> senderConfig) {
 		this.senderConfig = senderConfig;
 	}
 

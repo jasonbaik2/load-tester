@@ -4,15 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import me.jasonbaik.loadtester.sampler.PayloadIterator;
-import me.jasonbaik.loadtester.sampler.Sampler;
-import me.jasonbaik.loadtester.sampler.SamplerTask;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import me.jasonbaik.loadtester.sampler.SamplerFactory;
 import me.jasonbaik.loadtester.sender.AbstractSender;
 import me.jasonbaik.loadtester.util.RandomXmlGenerator;
 import me.jasonbaik.loadtester.valueobject.Broker;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 public abstract class AbstractRoundRobinMQTTPublisher<T extends AbstractRoundRobinMQTTPublisherConfig<? extends AbstractRoundRobinMQTTPublisher<T>>> extends AbstractSender<byte[], T> {
 
@@ -49,72 +47,13 @@ public abstract class AbstractRoundRobinMQTTPublisher<T extends AbstractRoundRob
 	}
 
 	@Override
-	public void send(Sampler<byte[], ?> sampler) throws Exception {
+	public void send() throws Exception {
 		// Establish all connections before publishing
 		connect();
 
 		setState("Publishing");
 
-		SamplerTask<byte[]> task = new SamplerTask<byte[]>() {
-
-			@Override
-			public void run(int index, byte[] payload) throws Exception {
-				roundRobinSend(index, payload);
-			}
-
-		};
-
-		if (getConfig().getDuration() != null) {
-			logger.info("Publishing messages for " + getConfig().getDuration() + " " + getConfig().getDurationUnit());
-
-			PayloadIterator<byte[]> payloadIterator = new PayloadIterator<byte[]>() {
-
-				@Override
-				public void remove() {
-					throw new UnsupportedOperationException();
-				}
-
-				@Override
-				public byte[] next() {
-					return payloads.get(publishedCount.get() % payloads.size());
-				}
-
-				@Override
-				public boolean hasNext() {
-					return true;
-				}
-
-			};
-
-			sampler.during(task, payloadIterator, getConfig().getDuration(), getConfig().getDurationUnit());
-
-		} else if (getConfig().getNumMessages() != null) {
-			logger.info("Publishing " + getConfig().getNumMessages() + " messages...");
-
-			PayloadIterator<byte[]> payloadIterator = new PayloadIterator<byte[]>() {
-
-				@Override
-				public void remove() {
-					throw new UnsupportedOperationException();
-				}
-
-				@Override
-				public byte[] next() {
-					return payloads.get(publishedCount.get() % payloads.size());
-				}
-
-				@Override
-				public boolean hasNext() {
-					if (publishedCount.get() == getConfig().getNumMessages()) {
-						return false;
-					}
-					return true;
-				}
-
-			};
-
-			sampler.forEach(task, payloadIterator);
-		}
+		SamplerFactory.newInstance(getConfig().getSamplerConfig()).sample(this::roundRobinSend, payloads);
 
 		setState("Publish Done");
 	}

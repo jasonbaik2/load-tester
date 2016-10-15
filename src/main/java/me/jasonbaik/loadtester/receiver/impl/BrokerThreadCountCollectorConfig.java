@@ -3,10 +3,10 @@ package me.jasonbaik.loadtester.receiver.impl;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import me.jasonbaik.loadtester.receiver.ReceiverConfig;
+import me.jasonbaik.loadtester.receiver.AbstractReceiverConfig;
 import me.jasonbaik.loadtester.valueobject.Broker;
 
-public class BrokerThreadCountCollectorConfig extends ReceiverConfig<BrokerThreadCountCollector> {
+public class BrokerThreadCountCollectorConfig extends AbstractReceiverConfig<BrokerThreadCountCollector> {
 
 	private static final long serialVersionUID = 1L;
 

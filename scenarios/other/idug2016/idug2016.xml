@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ctx="http://www.springframework.org/schema/context" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="
+       http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+	<bean id="propertyPlaceholderConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="ignoreUnresolvablePlaceholders" value="false" />
+		<property name="ignoreResourceNotFound" value="false" />
+		<property name="locations">
+			<list>
+				<value>file:/tmp/idug2016.properties</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="brokerBase" class="me.jasonbaik.loadtester.valueobject.Broker" abstract="true">
+		<property name="username" value="admin" />
+		<property name="password" value="admin" />
+		<property name="connectors">
+			<util:map>
+				<entry key="MQTT">
+					<bean class="me.jasonbaik.loadtester.valueobject.Connector">
+						<property name="protocol" value="MQTT" />
+						<property name="port" value="1883" />
+					</bean>
+				</entry>
+			</util:map>
+		</property>
+	</bean>
+
+	<bean id="sender" class="me.jasonbaik.loadtester.valueobject.Send">
+		<property name="name" value="simulate-fixed-throughput-to-each-connection" />
+		<property name="senderConfig">
+			<bean class="me.jasonbaik.loadtester.sender.impl.FixedThroughputPerConnectionMQTTPublisherConfig">
+				<property name="brokers">
+					<util:list value-type="me.jasonbaik.loadtester.valueobject.Broker">
+						<bean class="me.jasonbaik.loadtester.valueobject.Broker" parent="brokerBase">
+							<property name="hostname" value="amq1.idug2016.link" />
+						</bean>
+						<bean class="me.jasonbaik.loadtester.valueobject.Broker" parent="brokerBase">
+							<property name="hostname" value="amq2.idug2016.link" />
+						</bean>
+						<bean class="me.jasonbaik.loadtester.valueobject.Broker" parent="brokerBase">
+							<property name="hostname" value="amq3.idug2016.link" />
+						</bean>
+						<bean class="me.jasonbaik.loadtester.valueobject.Broker" parent="brokerBase">
+							<property name="hostname" value="amq4.idug2016.link" />
+						</bean>
+					</util:list>
+				</property>
+				<property name="ssl" value="false" />
+				<property name="trace" value="false" />
+				<property name="numConnections" value="${FixedThroughputPerConnectionMQTTPublisherConfig.numConnections}" />
+				<property name="messagePoolSize" value="${FixedThroughputPerConnectionMQTTPublisherConfig.messagePoolSize}" />
+				<property name="messageByteLength" value="${FixedThroughputPerConnectionMQTTPublisherConfig.messageByteLength}" />
+				<property name="messageInterval" value="${FixedThroughputPerConnectionMQTTPublisherConfig.messageInterval}" />
+				<property name="messageIntervalUnit" value="${FixedThroughputPerConnectionMQTTPublisherConfig.messageIntervalUnit}" />
+				<property name="qos" value="${FixedThroughputPerConnectionMQTTPublisherConfig.qos}" />
+				<property name="keepAliveIntervalMilli" value="${FixedThroughputPerConnectionMQTTPublisherConfig.keepAliveIntervalMilli}" />
+				<property name="topic" value="${FixedThroughputPerConnectionMQTTPublisherConfig.topic}" />
+				<property name="newConnectionInterval" value="${FixedThroughputPerConnectionMQTTPublisherConfig.newConnectionInterval}" />
+				<property name="newConnectionIntervalUnit" value="${FixedThroughputPerConnectionMQTTPublisherConfig.newConnectionIntervalUnit}" />
+				<property name="connectionStepSize" value="${FixedThroughputPerConnectionMQTTPublisherConfig.connectionStepSize}" />
+				<property name="duration" value="${FixedThroughputPerConnectionMQTTPublisherConfig.duration}" />
+				<property name="durationUnit" value="${FixedThroughputPerConnectionMQTTPublisherConfig.durationUnit}" />
+			</bean>
+		</property>
+	</bean>
+
+</beans>

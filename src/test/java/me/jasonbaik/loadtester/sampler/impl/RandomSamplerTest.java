@@ -2,7 +2,7 @@ package me.jasonbaik.loadtester.sampler.impl;
 
 import java.util.concurrent.TimeUnit;
 
-import me.jasonbaik.loadtester.sampler.PayloadIterator;
+import java.util.Iterator;
 import me.jasonbaik.loadtester.sampler.SamplerTask;
 
 import org.junit.Assert;
@@ -17,23 +17,18 @@ public class RandomSamplerTest {
 		int interval = 100;
 		final int count = 50;
 
-		RandomSamplerConfig config = new RandomSamplerConfig();
+		FixedCountRandomSamplerConfig config = new FixedCountRandomSamplerConfig();
 		config.setExpectedInterval(interval);
 		config.setExpectedIntervalUnit(TimeUnit.MILLISECONDS);
 
-		RandomSampler RandomSampler = new RandomSampler(config);
+		FixedCountRandomSampler RandomSampler = new FixedCountRandomSampler(config);
 
 		long startTime = System.currentTimeMillis();
 
-		RandomSampler.forEach(new SamplerTask<byte[]>() {
-
-			@Override
-			public void run(int index, byte[] payload) throws Exception {
-				System.out.println("Sample #" + index + " running");
-				numRun++;
-			}
-
-		}, new PayloadIterator<byte[]>() {
+		RandomSampler.forEach((index, payload) -> {
+			System.out.println("Sample #" + index + " running");
+			numRun++;
+		}, new Iterator<byte[]>() {
 
 			@Override
 			public void remove() {
@@ -67,23 +62,18 @@ public class RandomSamplerTest {
 		int interval = 100;
 		int duration = 5000;
 
-		RandomSamplerConfig config = new RandomSamplerConfig();
+		FixedCountRandomSamplerConfig config = new FixedCountRandomSamplerConfig();
 		config.setExpectedInterval(interval);
 		config.setExpectedIntervalUnit(TimeUnit.MILLISECONDS);
 
-		RandomSampler RandomSampler = new RandomSampler(config);
+		FixedCountRandomSampler RandomSampler = new FixedCountRandomSampler(config);
 
 		long startTime = System.currentTimeMillis();
 
-		RandomSampler.during(new SamplerTask<byte[]>() {
-
-			@Override
-			public void run(int index, byte[] payload) throws Exception {
-				System.out.println("Sample #" + index + " running");
-				numRun++;
-			}
-
-		}, new PayloadIterator<byte[]>() {
+		RandomSampler.during((index, payload) -> {
+			System.out.println("Sample #" + index + " running");
+			numRun++;
+		}, new Iterator<byte[]>() {
 
 			@Override
 			public void remove() {

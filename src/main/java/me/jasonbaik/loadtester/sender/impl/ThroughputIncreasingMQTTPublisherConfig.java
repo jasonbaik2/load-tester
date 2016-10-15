@@ -3,12 +3,12 @@ package me.jasonbaik.loadtester.sender.impl;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import me.jasonbaik.loadtester.sender.SenderConfig;
+import me.jasonbaik.loadtester.sender.AbstractSenderConfig;
 import me.jasonbaik.loadtester.valueobject.Broker;
 
 import org.fusesource.mqtt.client.QoS;
 
-public class ThroughputIncreasingMQTTPublisherConfig extends SenderConfig<ThroughputIncreasingMQTTPublisher> {
+public class ThroughputIncreasingMQTTPublisherConfig extends AbstractSenderConfig<ThroughputIncreasingMQTTPublisher> {
 
 	private static final long serialVersionUID = 1L;
 

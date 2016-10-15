@@ -11,24 +11,22 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.eclipse.paho.client.mqttv3.MqttException;
+
 import me.jasonbaik.loadtester.client.MQTTClientCallback;
 import me.jasonbaik.loadtester.client.MQTTClientFactory;
 import me.jasonbaik.loadtester.client.MQTTClientWrapper;
 import me.jasonbaik.loadtester.reporter.impl.ConnectionStatReporter;
 import me.jasonbaik.loadtester.reporter.impl.MQTTFlightTracer;
-import me.jasonbaik.loadtester.sampler.PayloadIterator;
-import me.jasonbaik.loadtester.sampler.Sampler;
-import me.jasonbaik.loadtester.sampler.SamplerTask;
+import me.jasonbaik.loadtester.sampler.SamplerFactory;
 import me.jasonbaik.loadtester.sender.AbstractSender;
 import me.jasonbaik.loadtester.util.RandomXmlGenerator;
 import me.jasonbaik.loadtester.valueobject.Broker;
 import me.jasonbaik.loadtester.valueobject.MQTTFlightData;
 import me.jasonbaik.loadtester.valueobject.Payload;
 import me.jasonbaik.loadtester.valueobject.ReportData;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.eclipse.paho.client.mqttv3.MqttException;
 
 public class ConnectionIncreasingMQTTPublisher extends AbstractSender<byte[], ConnectionIncreasingMQTTPublisherConfig> {
 
@@ -107,8 +105,8 @@ public class ConnectionIncreasingMQTTPublisher extends AbstractSender<byte[], Co
 
 			if (subscriptionNum == getConfig().getNumConnections()) {
 				endTimeMillis = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(getConfig().getDuration(), getConfig().getDurationUnit());
-				logger.info("All " + getConfig().getNumConnections() + " subscriptions have been established. The sender will publish the messages for an additional " + getConfig().getDuration()
-						+ " " + getConfig().getDurationUnit() + ", then terminate");
+				logger.info("All " + getConfig().getNumConnections() + " subscriptions have been established. The sender will publish the messages for an additional " + getConfig().getDuration() + " "
+						+ getConfig().getDurationUnit() + ", then terminate");
 				setState("Pub/Sub");
 			}
 		}
@@ -157,7 +155,7 @@ public class ConnectionIncreasingMQTTPublisher extends AbstractSender<byte[], Co
 	}
 
 	@Override
-	public void send(Sampler<byte[], ?> sampler) throws InterruptedException {
+	public void send() throws Exception {
 		setState("Conn/Pub/Sub");
 
 		// Start a thread that periodically creates more connections with the broker(s)
@@ -222,46 +220,22 @@ public class ConnectionIncreasingMQTTPublisher extends AbstractSender<byte[], Co
 
 		}, 0, getConfig().getNewConnectionInterval(), getConfig().getNewConnectionIntervalUnit());
 
-		// Publish messages at a fixed rate using the active connections in a round-robin fashion
-		// Stop when the sampler duration expires
-		sampler.forEach(new SamplerTask<byte[]>() {
+		// Publish messages using the active connections in a round-robin fashion
+		SamplerFactory.newInstance(getConfig().getSamplerConfig()).sample((index, payload) -> {
 
-			@Override
-			public void run(int index, byte[] payload) throws Exception {
-				MQTTClientWrapper clientWrapper = activeConnections.take();
+			MQTTClientWrapper clientWrapper = activeConnections.take();
 
-				if (logger.isDebugEnabled()) {
-					logger.debug("Publishing a message using the connection " + clientWrapper.getConnectionId());
-				}
-
-				clientWrapper.publishAsync(getConfig().getTopic(), Payload.toBytes(clientWrapper.getConnectionId(), Integer.toString(index), payload), getConfig().getQos(), false, publishCb);
-				publishedCount.incrementAndGet();
-
-				// Put the connection back into the tail of the blocking queue so it can be reused
-				activeConnections.put(clientWrapper);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Publishing a message using the connection " + clientWrapper.getConnectionId());
 			}
 
-		}, new PayloadIterator<byte[]>() {
+			clientWrapper.publishAsync(getConfig().getTopic(), Payload.toBytes(clientWrapper.getConnectionId(), Integer.toString(index), payload), getConfig().getQos(), false, publishCb);
+			publishedCount.incrementAndGet();
 
-			@Override
-			public void remove() {
-				throw new UnsupportedOperationException();
-			}
+			// Put the connection back into the tail of the blocking queue so it can be reused
+			activeConnections.put(clientWrapper);
 
-			@Override
-			public byte[] next() {
-				return payloads.get(publishedCount.get() % payloads.size());
-			}
-
-			@Override
-			public boolean hasNext() {
-				if (endTimeMillis < System.currentTimeMillis()) {
-					return false;
-				}
-				return true;
-			}
-
-		});
+		}, payloads);
 
 		setState("Sub");
 		logger.info("All messages have been published");

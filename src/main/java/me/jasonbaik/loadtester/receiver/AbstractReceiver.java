@@ -1,6 +1,6 @@
 package me.jasonbaik.loadtester.receiver;
 
-public abstract class AbstractReceiver<T extends ReceiverConfig<?>> implements Receiver {
+public abstract class AbstractReceiver<T extends AbstractReceiverConfig<?>> implements Receiver {
 
 	private T config;
 	private volatile String state;

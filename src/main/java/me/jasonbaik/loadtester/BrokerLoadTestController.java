@@ -30,13 +30,6 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
-import me.jasonbaik.loadtester.constant.StringConstants;
-import me.jasonbaik.loadtester.valueobject.Broker;
-import me.jasonbaik.loadtester.valueobject.Receive;
-import me.jasonbaik.loadtester.valueobject.ReportData;
-import me.jasonbaik.loadtester.valueobject.Scenario;
-import me.jasonbaik.loadtester.valueobject.Send;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.xbean.spring.context.ClassPathXmlApplicationContext;
@@ -44,6 +37,13 @@ import org.apache.xbean.spring.context.ResourceXmlApplicationContext;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.FileSystemResource;
+
+import me.jasonbaik.loadtester.constant.StringConstants;
+import me.jasonbaik.loadtester.valueobject.Broker;
+import me.jasonbaik.loadtester.valueobject.Receive;
+import me.jasonbaik.loadtester.valueobject.ReportData;
+import me.jasonbaik.loadtester.valueobject.Scenario;
+import me.jasonbaik.loadtester.valueobject.Send;
 
 public class BrokerLoadTestController<S1, R1> extends Node {
 

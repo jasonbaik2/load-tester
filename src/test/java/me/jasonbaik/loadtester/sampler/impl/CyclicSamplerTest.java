@@ -2,10 +2,10 @@ package me.jasonbaik.loadtester.sampler.impl;
 
 import java.util.concurrent.TimeUnit;
 
-import me.jasonbaik.loadtester.sampler.PayloadIterator;
+import java.util.Iterator;
 import me.jasonbaik.loadtester.sampler.SamplerTask;
-import me.jasonbaik.loadtester.sampler.impl.CyclicSampler;
-import me.jasonbaik.loadtester.sampler.impl.CyclicSamplerConfig;
+import me.jasonbaik.loadtester.sampler.impl.FixedCountCyclicSampler;
+import me.jasonbaik.loadtester.sampler.impl.FixedCountCyclicSamplerConfig;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -19,20 +19,15 @@ public class CyclicSamplerTest {
 		int interval = 500;
 		final int count = 10;
 
-		CyclicSamplerConfig config = new CyclicSamplerConfig();
+		FixedCountCyclicSamplerConfig config = new FixedCountCyclicSamplerConfig();
 		config.setInterval(interval);
 		config.setIntervalUnit(TimeUnit.MILLISECONDS);
 
-		CyclicSampler cyclicSampler = new CyclicSampler(config);
-		cyclicSampler.forEach(new SamplerTask<byte[]>() {
-
-			@Override
-			public void run(int index, byte[] payload) throws Exception {
-				System.out.println("Sample #" + index + " running");
-				numRun++;
-			}
-
-		}, new PayloadIterator<byte[]>() {
+		FixedCountCyclicSampler cyclicSampler = new FixedCountCyclicSampler(config);
+		cyclicSampler.forEach((index, payload) -> {
+			System.out.println("Sample #" + index + " running");
+			numRun++;
+		}, new Iterator<byte[]>() {
 
 			@Override
 			public void remove() {
@@ -63,20 +58,15 @@ public class CyclicSamplerTest {
 		int duration = 5;
 		int interval = 1;
 
-		CyclicSamplerConfig config = new CyclicSamplerConfig();
+		FixedCountCyclicSamplerConfig config = new FixedCountCyclicSamplerConfig();
 		config.setInterval(interval);
 		config.setIntervalUnit(TimeUnit.SECONDS);
 
-		CyclicSampler cyclicSampler = new CyclicSampler(config);
-		cyclicSampler.during(new SamplerTask<byte[]>() {
-
-			@Override
-			public void run(int index, byte[] payload) throws Exception {
-				System.out.println("Sample #" + index + " running");
-				numRun++;
-			}
-
-		}, new PayloadIterator<byte[]>() {
+		FixedCountCyclicSampler cyclicSampler = new FixedCountCyclicSampler(config);
+		cyclicSampler.during((index, payload) -> {
+			System.out.println("Sample #" + index + " running");
+			numRun++;
+		}, new Iterator<byte[]>() {
 
 			@Override
 			public void remove() {

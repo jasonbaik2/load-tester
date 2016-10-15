@@ -1,19 +1,19 @@
 package me.jasonbaik.loadtester.sampler.impl;
 
+import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
-import me.jasonbaik.loadtester.sampler.SamplerConfig;
+import me.jasonbaik.loadtester.sampler.AbstractFixedDurationSamplerConfig;
 
-class CyclicSamplerConfig extends SamplerConfig<CyclicSampler> {
+public abstract class FixedDurationCyclicSamplerConfig extends AbstractFixedDurationSamplerConfig<FixedDurationCyclicSampler> implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
 	private long interval;
 	private TimeUnit intervalUnit;
 
-	@Override
-	public Class<CyclicSampler> getSamplerClass() {
-		return CyclicSampler.class;
+	public Class<FixedDurationCyclicSampler> getSamplerClass() {
+		return FixedDurationCyclicSampler.class;
 	}
 
 	public long getInterval() {
@@ -30,11 +30,6 @@ class CyclicSamplerConfig extends SamplerConfig<CyclicSampler> {
 
 	public void setIntervalUnit(TimeUnit intervalUnit) {
 		this.intervalUnit = intervalUnit;
-	}
-
-	@Override
-	public String toString() {
-		return "CyclicSamplerConfig [interval=" + interval + ", intervalUnit=" + intervalUnit + "]";
 	}
 
 }

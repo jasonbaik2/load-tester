@@ -1,23 +1,23 @@
 package me.jasonbaik.loadtester.sampler.impl;
 
+import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
-import me.jasonbaik.loadtester.sampler.SamplerConfig;
+import me.jasonbaik.loadtester.sampler.AbstractFixedCountSamplerConfig;
 
-class RandomSamplerConfig extends SamplerConfig<RandomSampler> {
+public abstract class FixedCountRandomSamplerConfig extends AbstractFixedCountSamplerConfig<FixedCountRandomSampler> implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
 	private int expectedInterval;
 	private TimeUnit expectedIntervalUnit;
 
-	@Override
-	public Class<RandomSampler> getSamplerClass() {
-		return RandomSampler.class;
+	public Class<FixedCountRandomSampler> getSamplerClass() {
+		return FixedCountRandomSampler.class;
 	}
 
 	public int getExpectedInterval() {
-		return this.expectedInterval;
+		return expectedInterval;
 	}
 
 	public void setExpectedInterval(int expectedInterval) {
@@ -30,11 +30,6 @@ class RandomSamplerConfig extends SamplerConfig<RandomSampler> {
 
 	public void setExpectedIntervalUnit(TimeUnit expectedIntervalUnit) {
 		this.expectedIntervalUnit = expectedIntervalUnit;
-	}
-
-	@Override
-	public String toString() {
-		return "RandomSamplerConfig [expectedInterval=" + expectedInterval + ", expectedIntervalUnit=" + expectedIntervalUnit + "]";
 	}
 
 }

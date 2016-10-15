@@ -2,10 +2,10 @@ package me.jasonbaik.loadtester.receiver.impl;
 
 import java.util.List;
 
-import me.jasonbaik.loadtester.receiver.ReceiverConfig;
+import me.jasonbaik.loadtester.receiver.AbstractReceiverConfig;
 import me.jasonbaik.loadtester.valueobject.Broker;
 
-public class QueueDrainerConfig extends ReceiverConfig<QueueDrainer> {
+public class QueueDrainerConfig extends AbstractReceiverConfig<QueueDrainer> {
 
 	private static final long serialVersionUID = 1L;
 

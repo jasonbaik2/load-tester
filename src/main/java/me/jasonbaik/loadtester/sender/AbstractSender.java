@@ -1,6 +1,6 @@
 package me.jasonbaik.loadtester.sender;
 
-public abstract class AbstractSender<T1, T2 extends SenderConfig<?>> implements Sender<T1> {
+public abstract class AbstractSender<T1, T2 extends AbstractSenderConfig<?>> implements Sender<T1> {
 
 	private T2 config;
 	private volatile String state = "Connecting";
