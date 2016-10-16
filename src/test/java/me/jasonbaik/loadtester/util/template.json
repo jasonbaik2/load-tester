@@ -1,0 +1,10 @@
+{
+	"timestamp": "%TIMESTAMP:%",
+	"device_id": "sensor-%INT:0,5000%",
+	"message_id": "%ID:%",
+	"category": "CLASS-%INT:0,10%",
+	"temperature": "%DOUBLE:15,40,1%",
+	"pressure": "%INT:100000,110000%",
+	"luminosity": "%INT:0,500%",
+	"acceleration": "%DOUBLE:0,100,1%"
+}
