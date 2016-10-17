@@ -1,4 +1,4 @@
-package me.jasonbaik.loadtester.receiver.impl;
+package me.jasonbaik.loadtester.receiver;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,7 +24,6 @@ import javax.jms.MessageListener;
 import javax.jms.Session;
 
 import me.jasonbaik.loadtester.constant.StringConstants;
-import me.jasonbaik.loadtester.receiver.AbstractReceiver;
 import me.jasonbaik.loadtester.reporter.impl.MQTTFlightTracer;
 import me.jasonbaik.loadtester.valueobject.Broker;
 import me.jasonbaik.loadtester.valueobject.MQTTFlightData;

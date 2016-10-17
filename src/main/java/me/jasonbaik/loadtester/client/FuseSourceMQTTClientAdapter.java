@@ -9,12 +9,12 @@ import org.fusesource.mqtt.client.MQTT;
 import org.fusesource.mqtt.client.QoS;
 import org.fusesource.mqtt.client.Topic;
 
-public class FuseSourceMQTTClientWrapper implements MQTTClientWrapper {
+public class FuseSourceMQTTClientAdapter implements MQTTClientWrapper {
 
 	private MQTT client;
 	private CallbackConnection callbackConnection;
 
-	public FuseSourceMQTTClientWrapper(MQTT client) {
+	public FuseSourceMQTTClientAdapter(MQTT client) {
 		this.client = client;
 		this.callbackConnection = client.callbackConnection();
 	}

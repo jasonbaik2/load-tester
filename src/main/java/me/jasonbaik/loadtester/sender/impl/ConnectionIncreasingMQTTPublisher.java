@@ -49,7 +49,6 @@ public class ConnectionIncreasingMQTTPublisher extends AbstractSender<byte[], Co
 	private int brokerIndex = 0;
 
 	private volatile ScheduledExecutorService connectionService;
-	private volatile long endTimeMillis = Long.MAX_VALUE;
 
 	private volatile ArrayBlockingQueue<MQTTClientWrapper> activeConnections;
 
@@ -104,7 +103,6 @@ public class ConnectionIncreasingMQTTPublisher extends AbstractSender<byte[], Co
 			connectionStatReporter.recordSubscriptionComp(clientWrapper.getConnectionId());
 
 			if (subscriptionNum == getConfig().getNumConnections()) {
-				endTimeMillis = System.currentTimeMillis() + TimeUnit.MILLISECONDS.convert(getConfig().getDuration(), getConfig().getDurationUnit());
 				logger.info("All " + getConfig().getNumConnections() + " subscriptions have been established. The sender will publish the messages for an additional " + getConfig().getDuration() + " "
 						+ getConfig().getDurationUnit() + ", then terminate");
 				setState("Pub/Sub");

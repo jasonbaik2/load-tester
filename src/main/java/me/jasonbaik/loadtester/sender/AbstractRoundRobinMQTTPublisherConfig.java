@@ -1,11 +1,10 @@
-package me.jasonbaik.loadtester.sender.impl;
+package me.jasonbaik.loadtester.sender;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import me.jasonbaik.loadtester.sampler.AbstractSamplerConfig;
 import me.jasonbaik.loadtester.sampler.Sampler;
-import me.jasonbaik.loadtester.sender.AbstractSenderConfig;
 import me.jasonbaik.loadtester.valueobject.Broker;
 
 public abstract class AbstractRoundRobinMQTTPublisherConfig<T extends AbstractRoundRobinMQTTPublisher<? extends AbstractRoundRobinMQTTPublisherConfig<T>>> extends AbstractSenderConfig<T> {

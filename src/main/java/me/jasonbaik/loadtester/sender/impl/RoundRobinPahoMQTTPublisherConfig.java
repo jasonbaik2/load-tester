@@ -2,6 +2,8 @@ package me.jasonbaik.loadtester.sender.impl;
 
 import java.util.Map;
 
+import me.jasonbaik.loadtester.sender.AbstractRoundRobinMQTTPublisherConfig;
+
 public class RoundRobinPahoMQTTPublisherConfig extends AbstractRoundRobinMQTTPublisherConfig<RoundRobinPahoMQTTPublisher> {
 
 	private static final long serialVersionUID = 1L;

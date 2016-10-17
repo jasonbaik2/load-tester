@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import me.jasonbaik.loadtester.client.MQTTClientFactory;
+import me.jasonbaik.loadtester.sender.AbstractRoundRobinMQTTPublisher;
 import me.jasonbaik.loadtester.valueobject.Broker;
 import me.jasonbaik.loadtester.valueobject.Payload;
 import me.jasonbaik.loadtester.valueobject.ReportData;

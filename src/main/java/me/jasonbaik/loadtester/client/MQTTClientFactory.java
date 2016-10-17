@@ -47,7 +47,7 @@ public class MQTTClientFactory {
 			client.setTracer(tracer);
 		}
 
-		return new FuseSourceMQTTClientWrapper(client);
+		return new FuseSourceMQTTClientAdapter(client);
 	}
 
 	public static MQTTClientWrapper createPahoMQTTClient(Broker broker, String connectionId, boolean ssl, boolean cleanSession, long keepAlive) throws MqttException {
@@ -63,7 +63,7 @@ public class MQTTClientFactory {
 		props.putAll(broker.getSslProperties());
 		options.setSSLProperties(props);
 
-		return new PahoMQTTClientWrapper(mqttClient, options);
+		return new PahoMQTTClientAdapter(mqttClient, options);
 	}
 
 	public static MQTTClientWrapper createPahoMQTTClient() {

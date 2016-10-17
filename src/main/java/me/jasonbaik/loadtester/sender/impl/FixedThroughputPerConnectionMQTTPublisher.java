@@ -249,58 +249,54 @@ public class FixedThroughputPerConnectionMQTTPublisher extends AbstractSender<by
 
 		// Start a thread that periodically creates more connections with the broker(s)
 		connectionService = Executors.newSingleThreadScheduledExecutor();
-		connectionService.scheduleAtFixedRate(new Runnable() {
+		connectionService.scheduleAtFixedRate(() -> {
 
-			@Override
-			public void run() {
-				if (numConnectionsInitiated.get() >= getConfig().getNumConnections()) {
-					synchronized (connectionService) {
-						if (connectionService.isShutdown()) {
-							return;
-						}
-
-						connectionService.shutdown();
+			if (numConnectionsInitiated.get() >= getConfig().getNumConnections()) {
+				synchronized (connectionService) {
+					if (connectionService.isShutdown()) {
 						return;
 					}
+
+					connectionService.shutdown();
+					return;
+				}
+			}
+
+			for (int i = 0; i < getConfig().getConnectionStepSize(); i++) {
+				MQTT client = new MQTT();
+				Broker broker = getNextBroker();
+
+				try {
+					client.setHost(MQTTClientFactory.getFusesourceConnectionUrl(broker, getConfig().isSsl()));
+				} catch (URISyntaxException e) {
+					throw new RuntimeException(e);
 				}
 
-				for (int i = 0; i < getConfig().getConnectionStepSize(); i++) {
-					MQTT client = new MQTT();
-					Broker broker = getNextBroker();
+				String connectionId = uuid + "-" + numConnectionsInitiated.getAndIncrement();
+				client.setClientId(connectionId);
+				client.setCleanSession(getConfig().isCleanSession());
+				client.setUserName(broker.getUsername());
+				client.setPassword(broker.getPassword());
+				client.setKeepAlive((short) (getConfig().getKeepAliveIntervalMilli() / 1000));
 
+				if (getConfig().isSsl()) {
 					try {
-						client.setHost(MQTTClientFactory.getFusesourceConnectionUrl(broker, getConfig().isSsl()));
-					} catch (URISyntaxException e) {
+						client.setSslContext(SSLUtil.createSSLContext(getConfig().getKeyStore(), getConfig().getKeyStorePassword(), getConfig().getTrustStore(), getConfig().getTrustStorePassword()));
+					} catch (Exception e) {
 						throw new RuntimeException(e);
 					}
-
-					String connectionId = uuid + "-" + numConnectionsInitiated.getAndIncrement();
-					client.setClientId(connectionId);
-					client.setCleanSession(getConfig().isCleanSession());
-					client.setUserName(broker.getUsername());
-					client.setPassword(broker.getPassword());
-					client.setKeepAlive((short) (getConfig().getKeepAliveIntervalMilli() / 1000));
-
-					if (getConfig().isSsl()) {
-						try {
-							client.setSslContext(
-									SSLUtil.createSSLContext(getConfig().getKeyStore(), getConfig().getKeyStorePassword(), getConfig().getTrustStore(), getConfig().getTrustStorePassword()));
-						} catch (Exception e) {
-							throw new RuntimeException(e);
-						}
-					}
-
-					if (getConfig().isTrace()) {
-						MQTTFlightTracer tracer = new MQTTFlightTracer();
-						client.setTracer(tracer);
-						tracers.add(tracer);
-					}
-
-					CallbackConnection conn = client.callbackConnection();
-					conn.listener(connectionListener);
-					conn.connect(new ConnectCallback(client, conn));
-					connectionStatReporter.recordConnectionInit(connectionId);
 				}
+
+				if (getConfig().isTrace()) {
+					MQTTFlightTracer tracer = new MQTTFlightTracer();
+					client.setTracer(tracer);
+					tracers.add(tracer);
+				}
+
+				CallbackConnection conn = client.callbackConnection();
+				conn.listener(connectionListener);
+				conn.connect(new ConnectCallback(client, conn));
+				connectionStatReporter.recordConnectionInit(connectionId);
 			}
 
 		}, 0, getConfig().getNewConnectionInterval(), getConfig().getNewConnectionIntervalUnit());
@@ -395,6 +391,7 @@ public class FixedThroughputPerConnectionMQTTPublisher extends AbstractSender<by
 		return reportDatas;
 	}
 
+	@Override
 	public void log() {
 		System.out.print(getState());
 		System.out.print("\tPublished: ");

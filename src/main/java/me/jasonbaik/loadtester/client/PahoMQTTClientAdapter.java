@@ -11,12 +11,12 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttPersistenceException;
 import org.eclipse.paho.client.mqttv3.MqttSecurityException;
 
-public class PahoMQTTClientWrapper implements MQTTClientWrapper {
+public class PahoMQTTClientAdapter implements MQTTClientWrapper {
 
 	private MqttAsyncClient client;
 	private MqttConnectOptions options;
 
-	public PahoMQTTClientWrapper(MqttAsyncClient client, MqttConnectOptions options) {
+	public PahoMQTTClientAdapter(MqttAsyncClient client, MqttConnectOptions options) {
 		super();
 		this.client = client;
 		this.options = options;

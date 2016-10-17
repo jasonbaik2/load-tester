@@ -29,9 +29,9 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class QueueDrainer extends AbstractReceiver<QueueDrainerConfig> implements MessageListener {
+public class ActiveMQQueueDrainer extends AbstractReceiver<ActiveMQQueueDrainerConfig> implements MessageListener {
 
-	private static final Logger logger = LogManager.getLogger(QueueDrainer.class);
+	private static final Logger logger = LogManager.getLogger(ActiveMQQueueDrainer.class);
 
 	private String uuid = UUID.randomUUID().toString();
 	private ActiveMQConnectionFactory connFactory;
@@ -40,7 +40,7 @@ public class QueueDrainer extends AbstractReceiver<QueueDrainerConfig> implement
 
 	private AtomicInteger dequeueCount = new AtomicInteger();
 
-	public QueueDrainer(QueueDrainerConfig config) {
+	public ActiveMQQueueDrainer(ActiveMQQueueDrainerConfig config) {
 		super(config);
 		// TODO Auto-generated constructor stub
 	}

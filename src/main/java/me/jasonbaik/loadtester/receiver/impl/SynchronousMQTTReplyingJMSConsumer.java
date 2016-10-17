@@ -11,6 +11,7 @@ import java.util.concurrent.BlockingQueue;
 import javax.jms.MessageListener;
 
 import me.jasonbaik.loadtester.client.MQTTClientFactory;
+import me.jasonbaik.loadtester.receiver.AbstractMQTTReplyingJMSConsumer;
 import me.jasonbaik.loadtester.reporter.impl.MQTTFlightTracer;
 import me.jasonbaik.loadtester.util.SSLUtil;
 import me.jasonbaik.loadtester.valueobject.Broker;

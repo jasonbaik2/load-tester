@@ -2,6 +2,8 @@ package me.jasonbaik.loadtester.sender.impl;
 
 import org.fusesource.mqtt.client.QoS;
 
+import me.jasonbaik.loadtester.sender.AbstractRoundRobinMQTTPublisherConfig;
+
 public class RoundRobinMQTTPublisherConfig extends AbstractRoundRobinMQTTPublisherConfig<RoundRobinMQTTPublisher> {
 
 	private static final long serialVersionUID = 1L;

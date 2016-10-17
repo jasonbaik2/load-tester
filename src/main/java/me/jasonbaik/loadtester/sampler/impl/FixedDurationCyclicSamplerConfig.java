@@ -5,7 +5,7 @@ import java.util.concurrent.TimeUnit;
 
 import me.jasonbaik.loadtester.sampler.AbstractFixedDurationSamplerConfig;
 
-public abstract class FixedDurationCyclicSamplerConfig extends AbstractFixedDurationSamplerConfig<FixedDurationCyclicSampler> implements Serializable {
+public class FixedDurationCyclicSamplerConfig extends AbstractFixedDurationSamplerConfig<FixedDurationCyclicSampler> implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 

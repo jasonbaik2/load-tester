@@ -372,11 +372,6 @@ public class BrokerLoadTestController<S1, R1> extends Node {
 				fw.write("Client UUID=" + s.getClientUUID());
 				fw.write("\n");
 
-				if (s.getSamplerConfig() != null) {
-					fw.write("Sampler=" + s.getSamplerConfig().describe());
-					fw.write("\n");
-				}
-
 				fw.write("Sender=" + s.getSenderConfig().describe());
 				fw.write("\n");
 				fw.write("\n");

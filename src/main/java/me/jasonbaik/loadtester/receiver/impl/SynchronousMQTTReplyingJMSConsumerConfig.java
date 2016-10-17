@@ -1,5 +1,6 @@
 package me.jasonbaik.loadtester.receiver.impl;
 
+import me.jasonbaik.loadtester.receiver.AbstractMQTTReplyingJMSConsumerConfig;
 
 public class SynchronousMQTTReplyingJMSConsumerConfig extends AbstractMQTTReplyingJMSConsumerConfig<SynchronousMQTTReplyingJMSConsumer> {
 

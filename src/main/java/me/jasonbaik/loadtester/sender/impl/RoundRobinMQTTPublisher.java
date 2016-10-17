@@ -10,6 +10,7 @@ import java.util.concurrent.CountDownLatch;
 import me.jasonbaik.loadtester.client.MQTTClientFactory;
 import me.jasonbaik.loadtester.reporter.impl.ConnectionStatReporter;
 import me.jasonbaik.loadtester.reporter.impl.MQTTFlightTracer;
+import me.jasonbaik.loadtester.sender.AbstractRoundRobinMQTTPublisher;
 import me.jasonbaik.loadtester.util.SSLUtil;
 import me.jasonbaik.loadtester.valueobject.Broker;
 import me.jasonbaik.loadtester.valueobject.MQTTFlightData;

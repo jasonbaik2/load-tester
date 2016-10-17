@@ -1,8 +1,7 @@
-package me.jasonbaik.loadtester.receiver.impl;
+package me.jasonbaik.loadtester.receiver;
 
 import java.util.List;
 
-import me.jasonbaik.loadtester.receiver.AbstractReceiverConfig;
 import me.jasonbaik.loadtester.valueobject.Broker;
 
 import org.fusesource.mqtt.client.QoS;

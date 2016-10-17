@@ -5,7 +5,7 @@ import java.util.List;
 import me.jasonbaik.loadtester.receiver.AbstractReceiverConfig;
 import me.jasonbaik.loadtester.valueobject.Broker;
 
-public class QueueDrainerConfig extends AbstractReceiverConfig<QueueDrainer> {
+public class ActiveMQQueueDrainerConfig extends AbstractReceiverConfig<ActiveMQQueueDrainer> {
 
 	private static final long serialVersionUID = 1L;
 
@@ -14,9 +14,9 @@ public class QueueDrainerConfig extends AbstractReceiverConfig<QueueDrainer> {
 	private int numJMSConnections = 1;
 
 	@Override
-	public Class<QueueDrainer> getReceiverClass() {
+	public Class<ActiveMQQueueDrainer> getReceiverClass() {
 		// TODO Auto-generated method stub
-		return QueueDrainer.class;
+		return ActiveMQQueueDrainer.class;
 	}
 
 	public String getQueue() {
